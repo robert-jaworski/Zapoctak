@@ -22,7 +22,6 @@ try {
 Console.WriteLine($"Exe dir    = {command.ExecutableDirectory}");
 Console.WriteLine($"Album dir  = {command.AlbumDirectory}");
 Console.WriteLine($"Command    = {command.Command}");
-Console.WriteLine($"Unnamed args:\n    {string.Join("    ", command.UnnamedArguments)}");
-Console.WriteLine($"Named args:\n    {string.Join("    ", from x in command.NamedArguments select $"{x.Key} = {x.Value}")}");
+Console.WriteLine($"Named args:\n    {string.Join("\n    ", from x in command.NamedArguments select $"{x.Key} = {x.Value}")}");
 
 return 0;
