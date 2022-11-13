@@ -1,0 +1,15 @@
+# Použití
+`album <command> [parameters]`
+
+Každý pøíkaz má svoje parametry a nastavení, nìkterá nastavení jdou použít na všechny pøíkazy.
+
+## Parametry
+Parametry mají dlouhou (napø. `--album-dir`, `--verbose`) a krátkou verzi (`-d`, `-v`). Nìkteré parametry poø´žadují další hodnotu (tøeba název souboru nebo èíslo), které následuje hned po názvu parametru. Krátké verze paramentrù jdou spojovat (`-vd`). Pokud spojíme krátké verze paramtrù, které potøebují dodateènou hodnotu, musí tyto hodnoty následovat ve stejném poøadí.
+
+## Univerzální parametry
+- `--album-dir`, `-d` - nastaví adresáø s albem, se kterým budeme pracovat. Defaultní hodnota je aktuální adresáø.
+- `--verbose`, `-v` - program vypisuje více informací
+
+## Pøíkazy
+- `help` - zobrazí dostupné pøíkazy a parametry
+- `import <files>`
