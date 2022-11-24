@@ -8,7 +8,7 @@
 			public Dictionary<char, ArgumentDefinition> ShortNameMap { get; }
 			public List<ArgumentDefinition> ImplicitArguments { get; }
 
-			public CLIDefinition(List<ArgumentDefinition> args) : this(args, new List<CLIDefinition>()) {}
+			public CLIDefinition(List<ArgumentDefinition> args) : this(args, new List<CLIDefinition>()) { }
 
 			public CLIDefinition(List<ArgumentDefinition> args, List<CLIDefinition> include) {
 				Arguments = args;
@@ -85,7 +85,7 @@
 			public Dictionary<string, IArgument> NamedArgs { get; }
 			public List<string> UnnamedArgs { get; }
 
-			public Arguments() : this(new Dictionary<string, IArgument>(), new List<string>()) {}
+			public Arguments() : this(new Dictionary<string, IArgument>(), new List<string>()) { }
 
 			public Arguments(Dictionary<string, IArgument> namedArgs, List<string> unnamedArgs) {
 				NamedArgs = namedArgs;
@@ -150,7 +150,7 @@
 			}
 		}
 
-		public interface IArgument {}
+		public interface IArgument { }
 
 		public class FlagArgument : IArgument {
 			public bool IsSet { get; }
@@ -161,6 +161,18 @@
 
 			public override string ToString() {
 				return IsSet.ToString();
+			}
+
+			public override bool Equals(object? obj) {
+				if (obj == null)
+					return false;
+				if (obj is not FlagArgument)
+					return false;
+				return IsSet.Equals(((FlagArgument)obj).IsSet);
+			}
+
+			public override int GetHashCode() {
+				return IsSet.GetHashCode();
 			}
 		}
 
@@ -174,6 +186,18 @@
 			public override string ToString() {
 				return Value.ToString();
 			}
+
+			public override bool Equals(object? obj) {
+				if (obj == null)
+					return false;
+				if (obj is not NumberArgument)
+					return false;
+				return Value.Equals(((NumberArgument)obj).Value);
+			}
+
+			public override int GetHashCode() {
+				return Value.GetHashCode();
+			}
 		}
 
 		public class StringArgument : IArgument {
@@ -185,6 +209,16 @@
 
 			public override string ToString() {
 				return Value.ToString();
+			}
+
+			public override bool Equals(object? obj) {
+				if (obj == null) return false;
+				if (obj is not StringArgument) return false;
+				return Value.Equals(((StringArgument)obj).Value);
+			}
+
+			public override int GetHashCode() {
+				return Value.GetHashCode();
 			}
 		}
 
@@ -199,6 +233,17 @@
 
 			public override string ToString() {
 				return string.Join(", ", Files);
+			}
+
+			public override bool Equals(object? obj) {
+				if (obj == null) return false;
+				if (obj is not FilesArgument) return false;
+				if (Files.Count != ((FilesArgument)obj).Files.Count) return false;
+				return Files.Zip(((FilesArgument)obj).Files).All((x) => x.First == x.Second);
+			}
+
+			public override int GetHashCode() {
+				return Files.GetHashCode();
 			}
 		}
 
