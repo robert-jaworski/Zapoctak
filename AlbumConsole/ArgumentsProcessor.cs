@@ -1,7 +1,7 @@
 ﻿using AlbumLibrary.CLI;
 
 namespace AlbumConsole {
-	internal class CommandArguments {
+	public class CommandArguments {
 		public string ExecutableDirectory { get; }
 		public string AlbumDirectory { get; }
 		public string Command { get; }

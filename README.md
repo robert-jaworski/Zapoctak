@@ -29,3 +29,7 @@ Soubory týkající se samotné logiky programu
 ### AlbumConsole
 
 Soubory týkající se konzolové aplikace
+
+### AlbumTest
+
+Testy
