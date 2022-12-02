@@ -11,7 +11,7 @@ Parametry jsou ètyø typù:
 - `flag` - buï je nastaven nebo ne, napø. `--verbose`
 - `number` - èíslo
 - `string` - text, napø. `--album-dir`
-- `files` - seznam souborù, ukonèeno `-`, napø. `--import-files abc.jpg def.jpg -`
+- `files` - seznam souborù, ukonèeno jakmile se narazí na další parametr, napø. `--import-files abc.jpg def.jpg -x xyz.jpg` bude odpovídat souborùm `abc.jpg def.jpg`
 
 ## Univerzální parametry
 - `--album-dir`, `-d` - nastaví adresáø s albem, se kterým budeme pracovat. Defaultní hodnota je aktuální adresáø.

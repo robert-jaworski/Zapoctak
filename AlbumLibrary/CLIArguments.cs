@@ -34,14 +34,14 @@
 				}
 			}
 
-			public Dictionary<string, IArgument> GetArguments(IEnumerable<string> args) {
+			public Dictionary<string, IArgument> GetArguments(string[] args) {
 				var named = new Dictionary<string, IArgument>();
 
-				var en = args.GetEnumerator();
+				var en = new ArgumentIterator(args);
 				var i = 0;
 				while (en.MoveNext()) {
 					if (en.Current.StartsWith("--")) {
-						if (NameMap.TryGetValue(en.Current[2..], out ArgumentDefinition a)) {
+						if (NameMap.TryGetValue(en.Current[2..], out ArgumentDefinition? a)) {
 							if (named.ContainsKey(a.Name))
 								throw new ArgumentException($"Duplicate argument: {a.Name}");
 							named[a.Name] = a.ExtractValue(en);
@@ -49,7 +49,7 @@
 							throw new NotSupportedException($"Unknown argument: {en.Current}");
 					} else if (en.Current.StartsWith("-")) {
 						foreach (var ch in en.Current[1..]) {
-							if (ShortNameMap.TryGetValue(ch, out ArgumentDefinition a)) {
+							if (ShortNameMap.TryGetValue(ch, out ArgumentDefinition? a)) {
 								if (named.ContainsKey(a.Name))
 									throw new ArgumentException($"Duplicate argument: {a.Name}");
 								named[a.Name] = a.ExtractValue(en);
@@ -81,18 +81,6 @@
 			}
 		}
 
-		public class Arguments {
-			public Dictionary<string, IArgument> NamedArgs { get; }
-			public List<string> UnnamedArgs { get; }
-
-			public Arguments() : this(new Dictionary<string, IArgument>(), new List<string>()) { }
-
-			public Arguments(Dictionary<string, IArgument> namedArgs, List<string> unnamedArgs) {
-				NamedArgs = namedArgs;
-				UnnamedArgs = unnamedArgs;
-			}
-		}
-
 		public enum CLIArgumentType {
 			Flag,
 			Number,
@@ -115,32 +103,36 @@
 				IsImplicit = isImplicit;
 			}
 
-			public IArgument ExtractValue(IEnumerator<string> en, bool isImplicit = false) {
+			internal IArgument ExtractValue(ArgumentIterator en, bool isImplicit = false) {
 				switch (Type) {
 				case CLIArgumentType.Flag:
 					return new FlagArgument(true);
 				case CLIArgumentType.Number:
 					if (!isImplicit && !en.MoveNext())
-						throw new ArgumentException($"Argument {Name} requires a number, but nothing was given");
+						throw new ArgumentException($"Argument {Name} requires a number but nothing was given");
 					int x;
 					if (int.TryParse(en.Current, out x)) {
 						return new NumberArgument(x);
 					}
-					throw new ArgumentException($"Argument {Name} requires a number, but '{en.Current}' was given");
+					throw new ArgumentException($"Argument {Name} requires a number but '{en.Current}' was given");
 				case CLIArgumentType.String:
 					if (!isImplicit && !en.MoveNext())
-						throw new ArgumentException($"Argument {Name} requires a string, but nothing was given");
+						throw new ArgumentException($"Argument {Name} requires a string but nothing was given");
 					return new StringArgument(en.Current);
 				case CLIArgumentType.Files:
 					var files = new List<string>();
 					if (isImplicit) {
-						if (en.Current == "-")
+						if (en.Current.StartsWith("-")) {
+							en.MoveBack();
 							return new FilesArgument(files);
+						}
 						files.Add(en.Current);
 					}
 					while (en.MoveNext()) {
-						if (en.Current == "-")
+						if (en.Current.StartsWith("-")) {
+							en.MoveBack();
 							break;
+						}
 						files.Add(en.Current);
 					}
 					return new FilesArgument(files);
@@ -247,7 +239,31 @@
 			}
 		}
 
-		public static class EnumeratorExtensions {
+		internal class ArgumentIterator {
+			protected string[] Args { get; }
+
+			protected int Index { get; set; } = -1;
+
+			public ArgumentIterator(string[] args) {
+				Args = args;
+			}
+
+			public string Current => Args[Index];
+
+			public bool MoveNext() {
+				if (Index < Args.Length)
+					Index++;
+				return Index < Args.Length;
+			}
+
+			public bool MoveBack() {
+				if (Index >= 0)
+					Index--;
+				return Index >= 0;
+			}
+		}
+
+		internal static class EnumeratorExtensions {
 			public static IEnumerable<T> ToEnumerable<T>(this IEnumerator<T> enumerator) {
 				while (enumerator.MoveNext())
 					yield return enumerator.Current;
