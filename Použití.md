@@ -12,6 +12,8 @@ Parametry jsou ètyø typù:
 - `number` - èíslo
 - `string` - text, napø. `--album-dir`
 - `files` - seznam souborù, ukonèeno jakmile se narazí na další parametr, napø. `--import-files abc.jpg def.jpg -x xyz.jpg` bude odpovídat souborùm `abc.jpg def.jpg`
+    - seznam souborù mùže obsahovat název složky ukonèený `/`, resp. `\` (napø. `photos/`), ten bude odpovídat všem souborùm v dané složce (nerekurzivní)
+    - seznam souborù mùže taky obsahovat intervaly souborù, specifikované pomocí `...` (napø. `img010.jpg ... img029.jpg`, `img100.jpg...`, `...foto/img100.jpg`, `../foto/img100.jpg ... ../foto/img300.jpg`)
 
 ## Univerzální parametry
 - `--album-dir`, `-d` - nastaví adresáø s albem, se kterým budeme pracovat. Defaultní hodnota je aktuální adresáø.
