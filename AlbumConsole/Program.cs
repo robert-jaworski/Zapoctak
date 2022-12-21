@@ -27,11 +27,23 @@ Console.WriteLine($"Command    = {command.Command}");
 Console.WriteLine($"Named args:\n    {string.Join("\n    ", from x in command.NamedArguments select $"{x.Key} = {x.Value}")}");
 
 if (command.Command == "debug") {
-	var files = ImportFilePathProvider.Process(((FilesArgument)command.NamedArguments["test-files"]).Files, new HashSet<string> { ".jpg" });
-	Console.WriteLine("\nFiles: ");
-	Console.Write(string.Join('\n', files.GetFilePaths(command.AlbumDirectory)));
-	Console.WriteLine("\nErrors: ");
-	Console.Write(string.Join('\n', files.GetErrors()));
+	var errHandler = new ErrorListHandler();
+	var files = ImportFilePathProvider.Process(((FilesArgument)command.NamedArguments["test-files"]).Files,
+		new HashSet<string> { ".jpg" }, errHandler);
+	if (errHandler.IsError) {
+		Console.WriteLine("\nParse errors: ");
+		Console.Write(string.Join('\n', errHandler.GetUnprocessed()));
+	} else {
+		Console.WriteLine("Parsed successfully");
+		Console.WriteLine("\nFiles: ");
+		Console.Write(string.Join('\n', files.GetFilePaths(new DirectoryFileSystemProvider(command.AlbumDirectory), errHandler)));
+		if (errHandler.IsError) {
+			Console.WriteLine("\nErrors: ");
+			Console.Write(string.Join('\n', errHandler.GetUnprocessed()));
+		} else {
+			Console.WriteLine("No errors");
+		}
+	}
 }
 
 return 0;

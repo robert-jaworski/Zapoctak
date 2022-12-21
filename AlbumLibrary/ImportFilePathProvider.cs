@@ -1,41 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AlbumLibrary {
+﻿namespace AlbumLibrary {
 	public interface IImportFilePathProvider {
-		IEnumerable<string> GetFilePaths(string directoryPath);
-
-		IEnumerable<string> GetErrors();
+		IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler);
 	}
+
 	public class ImportFilePathProvider : IImportFilePathProvider {
 		protected List<IFilePathProvider> FileProviders { get; }
-
-		protected List<string> Errors { get; }
 
 		protected HashSet<string> AllowedExtensions { get; }
 
 		public ImportFilePathProvider(List<IFilePathProvider> fileProviders, HashSet<string> allowedExtensions) {
 			FileProviders = fileProviders;
-			Errors = new List<string>();
 			AllowedExtensions = allowedExtensions;
 		}
 
-		public static ImportFilePathProvider Process(List<string> fileSpecs, HashSet<string> allowedExtensions) {
+		public static ImportFilePathProvider Process(IList<string> fileSpecs, HashSet<string> allowedExtensions, IErrorHandler errorHandler) {
 			var fileProviders = new List<IFilePathProvider>();
-			var errors = new List<string>();
 
 			for (int i = 0; i < fileSpecs.Count; i++) {
-				var file = fileSpecs[i];
+				var file = fileSpecs[i].Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 				var prev = i - 1 >= 0 ? fileSpecs[i - 1] : null;
 				var next = i + 1 < fileSpecs.Count ? fileSpecs[i + 1] : null;
 
 				if (string.IsNullOrEmpty(file))
 					throw new ArgumentException("FileSpecs contains a null or empty string");
 				if (file == "...") {
-					errors.Add($"Invalid file range specification: {prev ?? ""} {file} {next ?? ""}");
+					errorHandler.Error($"Invalid file range specification: {prev ?? ""} {file} {next ?? ""}");
 					continue;
 				}
 
@@ -51,7 +40,7 @@ namespace AlbumLibrary {
 					i++;
 					var nnext = i + 1 < fileSpecs.Count ? fileSpecs[i + 1] : null;
 					if (string.IsNullOrEmpty(nnext) || Path.EndsInDirectorySeparator(nnext) || nnext.StartsWith("...") || nnext.EndsWith("...")) {
-						errors.Add($"Invalid file range specification: {prev ?? ""} {file} {next} {nnext ?? ""}");
+						errorHandler.Error($"Invalid file range specification: {prev ?? ""} {file} {next} {nnext ?? ""}");
 						continue;
 					}
 					i++;
@@ -63,7 +52,7 @@ namespace AlbumLibrary {
 					if (string.IsNullOrEmpty(dir2))
 						dir2 = ".";
 					if (dir1 != dir2) {
-						errors.Add($"File range directories do not match: {file} {next} {nnext}");
+						errorHandler.Error($"File range directories do not match: {file} {next} {nnext}");
 						continue;
 					}
 
@@ -73,79 +62,77 @@ namespace AlbumLibrary {
 				}
 			}
 
-			var p = new ImportFilePathProvider(fileProviders, allowedExtensions);
-			p.Errors.AddRange(errors);
-			return p;
+			return new ImportFilePathProvider(fileProviders, allowedExtensions);
 		}
 
-		public IEnumerable<string> GetFilePaths(string directoryPath) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler) {
 			return from p in FileProviders
-				   select p.GetFilePaths(directoryPath, Errors, AllowedExtensions) into files
+				   select p.GetFilePaths(fileSystem, errorHandler, AllowedExtensions) into files
 				   from f in files
-				   select Path.GetFullPath(f);
+				   select fileSystem.GetFullPath(f);
 		}
 
-		public IEnumerable<string> GetErrors() {
-			return Errors;
+		public List<IFilePathProvider> GetFilePathProviders() {
+			return new List<IFilePathProvider>(FileProviders);
 		}
 	}
 
 	public interface IFilePathProvider {
-		IEnumerable<string> GetFilePaths(string dirPath, List<string> errors, HashSet<string> allowedExtensions);
+		IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions);
 	}
 
 	public class SingleFilePathProvider : IFilePathProvider {
-		protected string FilePath { get; }
+		public string FilePath { get; }
 
 		public SingleFilePathProvider(string path) {
 			FilePath = path;
 		}
 
-		public IEnumerable<string> GetFilePaths(string dirPath, List<string> errors, HashSet<string> allowedExtensions) {
-			var p = Path.Combine(dirPath, FilePath);
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
+			var p = fileSystem.GetFullPath(FilePath);
 			var ext = Path.GetExtension(p);
 			if (allowedExtensions.Contains(ext)) {
-				if (File.Exists(p)) {
+				if (fileSystem.FileExists(p)) {
 					yield return p;
 				} else {
-					errors.Add($"File does not exist: {p}");
+					errorHandler.Error($"File does not exist: {p}");
 				}
 			} else {
-				errors.Add($"Disallowed extension '{ext}': {p}");
+				errorHandler.Error($"Disallowed extension '{ext}': {p}");
 			}
 		}
 	}
 
 	public class DirectoryFilePathProvider : IFilePathProvider {
-		protected string DirectoryPath { get; }
+		public string DirectoryPath { get; }
 
 		public DirectoryFilePathProvider(string path) {
 			DirectoryPath = path;
 		}
 
-		public IEnumerable<string> GetFilePaths(string dirPath, List<string> errors, HashSet<string> allowedExtensions) {
-			var p = Path.Combine(dirPath, DirectoryPath);
-			if (Directory.Exists(p)) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
+			var p = fileSystem.GetFullPath(DirectoryPath);
+			if (fileSystem.DirectoryExists(p)) {
 				int files = 0;
-				foreach (var file in Directory.EnumerateFiles(p)) {
+				foreach (var file in fileSystem.EnumerateFiles(p)) {
 					if (allowedExtensions.Contains(Path.GetExtension(file))) {
 						files++;
 						yield return file;
 					}
 				}
 				if (files == 0) {
-					errors.Add($"No suitable files found in directory: {p}");
+					errorHandler.Error($"No suitable files found in directory: {p}");
 				}
 			} else {
-				errors.Add($"Directory does not exist: {p}");
+				errorHandler.Error($"Directory does not exist: {p}");
 			}
 		}
 	}
 
 	public class RangeFilePathProvider : IFilePathProvider {
-		protected string DirectoryPath { get; }
-		protected string? StartPath { get; }
-		protected string? EndPath { get; }
+		public string DirectoryPath { get; }
+		public string? StartPath { get; }
+		public string? EndPath { get; }
 
 		public RangeFilePathProvider(string path, string? startFile, string? endFile) {
 			DirectoryPath = path;
@@ -153,13 +140,13 @@ namespace AlbumLibrary {
 			EndPath = endFile is null ? null : Path.Combine(DirectoryPath, endFile);
 		}
 
-		public IEnumerable<string> GetFilePaths(string dirPath, List<string> errors, HashSet<string> allowedExtensions) {
-			var p = Path.Combine(dirPath, DirectoryPath);
-			var start = StartPath is null ? null : Path.Combine(dirPath, StartPath);
-			var end = EndPath is null ? null : Path.Combine(dirPath, EndPath);
-			if (Directory.Exists(p)) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
+			var p = fileSystem.GetFullPath(DirectoryPath);
+			var start = StartPath is null ? null : fileSystem.GetFullPath(StartPath);
+			var end = EndPath is null ? null : fileSystem.GetFullPath(EndPath);
+			if (fileSystem.DirectoryExists(p)) {
 				int files = 0;
-				foreach (var file in Directory.EnumerateFiles(p)) {
+				foreach (var file in fileSystem.EnumerateFiles(p)) {
 					if (start is not null && file.CompareTo(start) < 0)
 						continue;
 					if (end is not null && file.CompareTo(end) > 0)
@@ -170,10 +157,10 @@ namespace AlbumLibrary {
 					}
 				}
 				if (files == 0) {
-					errors.Add($"No suitable files found in range: {start ?? ""} ... {end ?? ""}");
+					errorHandler.Error($"No suitable files found in range: {start ?? ""} ... {end ?? ""}");
 				}
 			} else {
-				errors.Add($"Directory does not exist: {p}");
+				errorHandler.Error($"Directory does not exist: {p}");
 			}
 		}
 	}
