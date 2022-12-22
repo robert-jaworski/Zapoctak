@@ -7,19 +7,6 @@ namespace AlbumConsole {
 		public string Command { get; }
 		public Dictionary<string, IArgument> NamedArguments { get; }
 
-		public static CLIDefinition UniversalParameters { get; } = new CLIDefinition(new List<ArgumentDefinition> {
-			new ArgumentDefinition("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
-			new ArgumentDefinition("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false)
-		});
-
-		public static Dictionary<string, CLIDefinition> CommandParameters { get; } = new Dictionary<string, CLIDefinition> {
-			{ "debug", new CLIDefinition(new List<ArgumentDefinition> {
-				new ArgumentDefinition("test-implicit", ' ', CLIArgumentType.String, null, true),
-				new ArgumentDefinition("test-number", 'n', CLIArgumentType.Number, new NumberArgument(0), false),
-				new ArgumentDefinition("test-files", 'f', CLIArgumentType.Files, new FilesArgument(), false),
-			}, new List<CLIDefinition> { UniversalParameters }) }
-		};
-
 		public CommandArguments(string executableDirectory, string albumDirectory, string command, Dictionary<string, IArgument> named) {
 			ExecutableDirectory = executableDirectory;
 			AlbumDirectory = albumDirectory;
@@ -34,25 +21,39 @@ namespace AlbumConsole {
 			if (exeDir == null)
 				throw new ArgumentException("Unexpected error");
 			var albumDir = Path.GetFullPath(".");
-			var cmd = "help";
+
 			Dictionary<string, IArgument> parsedArgs;
-			if (args.Length >= 2) {
-				cmd = args[1];
-				var parameters = UniversalParameters;
-				if (CommandParameters.ContainsKey(cmd)) {
-					parameters = CommandParameters[cmd];
-				}
+			var cmd = args.Length >= 2 ? args[1] : "help";
+			var parameters = AlbumConsole.Command.GetCLIDefinition(cmd);
 
-				parsedArgs = parameters.GetArguments(args[2..]);
+			try {
+				parsedArgs = args.Length >= 2 ? parameters.GetArguments(args[2..]) : parameters.GetArguments(Array.Empty<string>());
+			} catch (CLIArgumentException e) {
+				if (e.ProcessedArgs.ContainsKey("help") && (e.ProcessedArgs["help"] as FlagArgument)?.IsSet == true)
+					parsedArgs = new Dictionary<string, IArgument> {
+						{ "help", new FlagArgument(true) },
+						{ "verbose", e.ProcessedArgs.ContainsKey("verbose") ?
+							(e.ProcessedArgs["verbose"] as FlagArgument) ?? new FlagArgument(false) :
+							new FlagArgument(false) },
+						{ "album-dir", new StringArgument(".") },
+					};
+				else
+					throw e;
+			}
 
-				if (parsedArgs.ContainsKey("album-dir")) {
-					albumDir = Path.GetFullPath(((StringArgument)parsedArgs["album-dir"]).Value);
-				}
-			} else {
-				parsedArgs = UniversalParameters.GetArguments(Array.Empty<string>());
+			if (parsedArgs.ContainsKey("album-dir")) {
+				albumDir = Path.GetFullPath(((StringArgument)parsedArgs["album-dir"]).Value);
 			}
 
 			return new CommandArguments(exeDir, albumDir, cmd, parsedArgs);
+		}
+
+		public T GetArgument<T>(string name) where T : IArgument {
+			if (!NamedArguments.ContainsKey(name))
+				throw new InternalException($"There is no argument named {name}");
+			if (NamedArguments[name] is not T)
+				throw new InternalException($"Argument {name} has the wrong type");
+			return (T)NamedArguments[name];
 		}
 	}
 }
