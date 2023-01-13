@@ -5,6 +5,7 @@
 		bool FileExists(string fullPath);
 		bool DirectoryExists(string fullPath);
 		IEnumerable<string> EnumerateFiles(string fullPath);
+		IEnumerable<string> EnumerateDirectories(string fullPath);
 
 		DateTime FileCreation(string fullPath);
 		DateTime FileModification(string fullPath);
@@ -26,6 +27,10 @@
 
 		public IEnumerable<string> EnumerateFiles(string fullPath) {
 			return Directory.EnumerateFiles(fullPath);
+		}
+
+		public IEnumerable<string> EnumerateDirectories(string fullPath) {
+			return Directory.EnumerateDirectories(fullPath);
 		}
 
 		public bool FileExists(string fullPath) {

@@ -1,4 +1,5 @@
-﻿using AlbumLibrary.CLI;
+﻿using AlbumLibrary;
+using AlbumLibrary.CLI;
 using System.Text.RegularExpressions;
 
 namespace AlbumConsole {
@@ -30,7 +31,11 @@ namespace AlbumConsole {
 			{ "interactive", new Command("interactive", "Allows you to run multiple commands after each other, " +
 				"propagates the following parameters: verbose, album-dir", new List<ArgumentDefinition> {
 				new ArgumentDefinition("strict", 's', CLIArgumentType.Flag, new FlagArgument(false), false),
-			}, DefaultCommandsActions.Interactive) }
+			}, DefaultCommandsActions.Interactive) },
+			{ "metadata", new Command("metadata", "Show the metadata of specified images. Use --verbose to show all available metadata.",
+				new List<ArgumentDefinition> {
+				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, null, true)
+			}, DefaultCommandsActions.Metadata) }
 		};
 
 		public string Name { get; }
@@ -171,7 +176,54 @@ namespace AlbumConsole {
 				}
 			} while (args.Command != "exit");
 
+			Console.WriteLine();
 			return new CommandResult(true, $"Successfully ran {counter} command" + (counter == 1 ? "" : "s"));
+		}
+
+		public static CommandResult Metadata(CommandArguments args) {
+			var errHandler = new ErrorListHandler();
+			var files = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files,
+				new HashSet<string> { ".jpg" }, errHandler);
+			if (errHandler.IsError)
+				return new CommandResult(false, errHandler.GetUnprocessed().ToList());
+
+			var fs = new DirectoryFileSystemProvider(".");
+
+			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
+			if (verbose) {
+				foreach (var file in files.GetFilePaths(fs, errHandler)) {
+					Console.WriteLine($"{file}:");
+					foreach (var dir in fs.GetFileInfo(file)) {
+						Console.WriteLine($"\t{dir.Name}:");
+						foreach (var tag in dir.Tags) {
+							Console.WriteLine($"\t\t{tag.Name} = {tag.Description}");
+						}
+					}
+					Console.WriteLine("Test FileInfoProvider:");
+					var infoProvider = new NormalFileInfoProvider();
+					var info = infoProvider.GetInfo(file, fs);
+					Console.WriteLine($"\tDate/Time = {info.SuitableDateTime}");
+					Console.WriteLine($"\tDevice = {info.DeviceName}");
+					Console.WriteLine();
+				}
+			} else {
+				foreach (var file in files.GetFilePaths(fs, errHandler)) {
+					Console.WriteLine($"{file}:");
+					var infoProvider = new NormalFileInfoProvider();
+					var info = infoProvider.GetInfo(file, fs);
+					Console.WriteLine($"\tDate/Time = {info.SuitableDateTime}");
+					Console.WriteLine($"\tDevice = {info.DeviceName}");
+					Console.WriteLine();
+				}
+			}
+
+			var msg = new List<string>();
+			if (!verbose)
+				msg.Add("To display more information use --verbose");
+
+			if (errHandler.IsError)
+				return new CommandResult(false, errHandler.GetUnprocessed().Concat(new List<string> { string.Empty }).Concat(msg).ToList());
+			return new CommandResult(true, msg);
 		}
 	}
 }

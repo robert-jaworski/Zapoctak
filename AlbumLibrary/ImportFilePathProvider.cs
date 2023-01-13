@@ -31,8 +31,13 @@
 				if (Path.EndsInDirectorySeparator(file)) {
 					fileProviders.Add(new DirectoryFilePathProvider(file));
 				} else if (file.EndsWith("...")) {
-					var dir = Path.GetDirectoryName(file[..^3]);
-					fileProviders.Add(new RangeFilePathProvider(string.IsNullOrEmpty(dir) ? "" : dir, Path.GetFileName(file[..^3]), null));
+					var prefix = file[..^3];
+					if (Path.EndsInDirectorySeparator(prefix)) {
+						fileProviders.Add(new DirectoryFilePathProvider(prefix, true));
+					} else {
+						var dir = Path.GetDirectoryName(prefix);
+						fileProviders.Add(new RangeFilePathProvider(string.IsNullOrEmpty(dir) ? "" : dir, Path.GetFileName(prefix), null));
+					}
 				} else if (file.StartsWith("...")) {
 					var dir = Path.GetDirectoryName(file[3..]);
 					fileProviders.Add(new RangeFilePathProvider(string.IsNullOrEmpty(dir) ? "" : dir, null, Path.GetFileName(file[3..])));
@@ -105,26 +110,38 @@
 
 	public class DirectoryFilePathProvider : IFilePathProvider {
 		public string DirectoryPath { get; }
+		public bool Recursive { get; }
 
-		public DirectoryFilePathProvider(string path) {
+		public DirectoryFilePathProvider(string path, bool recursive = false) {
 			DirectoryPath = path;
+			Recursive = recursive;
 		}
 
 		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
-			var p = fileSystem.GetFullPath(DirectoryPath);
-			if (fileSystem.DirectoryExists(p)) {
-				int files = 0;
-				foreach (var file in fileSystem.EnumerateFiles(p)) {
-					if (allowedExtensions.Contains(Path.GetExtension(file))) {
-						files++;
-						yield return file;
+			var paths = new Stack<string>();
+			paths.Push(fileSystem.GetFullPath(DirectoryPath));
+			while (paths.Count > 0) {
+				var p = paths.Pop();
+				if (fileSystem.DirectoryExists(p)) {
+					int files = 0, dirs = 0;
+					foreach (var file in fileSystem.EnumerateFiles(p)) {
+						if (allowedExtensions.Contains(Path.GetExtension(file))) {
+							files++;
+							yield return file;
+						}
 					}
+					if (Recursive) {
+						foreach (var dir in fileSystem.EnumerateDirectories(p).Reverse()) {
+							dirs++;
+							paths.Push(dir);
+						}
+					}
+					if (files == 0 && dirs == 0) {
+						errorHandler.Error($"No suitable files found in directory: {p}");
+					}
+				} else {
+					errorHandler.Error($"Directory does not exist: {p}");
 				}
-				if (files == 0) {
-					errorHandler.Error($"No suitable files found in directory: {p}");
-				}
-			} else {
-				errorHandler.Error($"Directory does not exist: {p}");
 			}
 		}
 	}

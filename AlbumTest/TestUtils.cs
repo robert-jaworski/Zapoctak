@@ -14,10 +14,26 @@ namespace AlbumTest {
 			return Files.Any(f => f.StartsWith(Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar));
 		}
 
-		public IEnumerable<string> EnumerateFiles(string fullPath) {
+		protected IEnumerable<string> GetFilesWithPrefix(ref string fullPath) {
+			fullPath = Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar;
+			var p = fullPath;
 			return from f in Files
-				   where f.StartsWith(Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar)
+				   where f.StartsWith(p)
 				   select f;
+		}
+
+		public IEnumerable<string> EnumerateFiles(string fullPath) {
+			return from f in GetFilesWithPrefix(ref fullPath)
+				   where !f[fullPath.Length..].Contains(Path.DirectorySeparatorChar)
+				   select f;
+		}
+
+		public IEnumerable<string> EnumerateDirectories(string fullPath) {
+			var result = from f in GetFilesWithPrefix(ref fullPath)
+				   where f[fullPath.Length..].Contains(Path.DirectorySeparatorChar)
+				   let x = f[fullPath.Length..].Split(Path.DirectorySeparatorChar)[0]
+				   select fullPath + x;
+			return result.Distinct();
 		}
 
 		public bool FileExists(string fullPath) {
@@ -25,7 +41,7 @@ namespace AlbumTest {
 		}
 
 		public string GetFullPath(string relPath) {
-			return Path.GetFullPath(Path.Combine(Directory, relPath));
+			return Path.GetFullPath(Path.Combine(Directory, relPath)).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 		}
 
 		public DateTime FileCreation(string fullPath) {

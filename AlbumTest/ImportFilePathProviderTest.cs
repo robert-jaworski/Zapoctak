@@ -6,14 +6,16 @@ namespace AlbumTest {
 	public class ImportFilePathProviderTest {
 		[TestMethod]
 		[DataRow(1, new string[] { "img001.jpg", "img002.jpg" }, new string[] { "img001.jpg", "img002.jpg" },
-			new string[] { }, new string[] { }, new string?[] { }, new string?[] { }, new string[] { "file", "file" })]
+			new string[] { }, new bool[] { }, new string[] { }, new string?[] { }, new string?[] { }, new string[] { "file", "file" })]
 		[DataRow(2, new string[] { "images/01/", "images\\02\\" }, new string[] { },
-			new string[] { "images\\01\\", "images\\02\\" }, new string[] { }, new string?[] { }, new string?[] { }, new string[] { "dir", "dir" })]
-		[DataRow(3, new string[] { "img001.jpg...", "...test/img002.jpg", "test2\\img003.jpg", "...", "test2/img004.jpg" },
-			new string[] { }, new string[] { }, new string[] { "", "test", "test2" }, new string?[] { "img001.jpg", null, "test2\\img003.jpg" },
+			new string[] { "images\\01\\", "images\\02\\" }, new bool[] { false, false }, new string[] { }, new string?[] { }, new string?[] { }, new string[] { "dir", "dir" })]
+		[DataRow(3, new string[] { "images/01/...", "images\\02\\..." }, new string[] { },
+			new string[] { "images\\01\\", "images\\02\\" }, new bool[] { true, true }, new string[] { }, new string?[] { }, new string?[] { }, new string[] { "dir", "dir" })]
+		[DataRow(4, new string[] { "img001.jpg...", "...test/img002.jpg", "test2\\img003.jpg", "...", "test2/img004.jpg" },
+			new string[] { }, new string[] { }, new bool[] { }, new string[] { "", "test", "test2" }, new string?[] { "img001.jpg", null, "test2\\img003.jpg" },
 			new string?[] { null, "test\\img002.jpg", "test2\\img004.jpg" }, new string[] { "range", "range", "range" })]
 		public void ImportFilePathProvider_Process(int id, string[] specs,
-			string[] singleFiles, string[] directories, string[] rangeDirs, string?[] rangeStarts, string?[] rangeEnds, string[] types) {
+			string[] singleFiles, string[] directories, bool[] dirRecursive, string[] rangeDirs, string?[] rangeStarts, string?[] rangeEnds, string[] types) {
 			Logger.LogMessage($"Testing {id}: {string.Join(' ', specs)}");
 			Assert.AreEqual(rangeDirs.Length, rangeStarts.Length);
 			Assert.AreEqual(rangeStarts.Length, rangeEnds.Length);
@@ -34,6 +36,9 @@ namespace AlbumTest {
 				case "dir":
 					Assert.IsTrue(providers[i] is DirectoryFilePathProvider);
 					Assert.IsTrue(directoriesI < directories.Length);
+					Assert.IsTrue(directoriesI < dirRecursive.Length);
+					Assert.AreEqual(dirRecursive[directoriesI],
+						((DirectoryFilePathProvider)providers[i]).Recursive);
 					Assert.AreEqual(directories[directoriesI++].Replace('\\', Path.DirectorySeparatorChar),
 						((DirectoryFilePathProvider)providers[i]).DirectoryPath);
 					break;
@@ -89,6 +94,7 @@ namespace AlbumTest {
 		[DataRow(3, new string[] { "img003.jpg..." }, @"C:\images1", new string[] { @"C:\images1\img003.jpg", @"C:\images1\img004.jpg" })]
 		[DataRow(4, new string[] { "...img002.jpg" }, @"C:\images1", new string[] { @"C:\images1\img001.jpg", @"C:\images1\img002.jpg" })]
 		[DataRow(5, new string[] { "img002.jpg", "...", "img003.jpg" }, @"C:\images1", new string[] { @"C:\images1\img002.jpg", @"C:\images1\img003.jpg" })]
+		[DataRow(6, new string[] { "images2\\..." }, @"C:\", new string[] { @"C:\images2\01\img001.jpg", @"C:\images2\01\img002.jpg", @"C:\images2\02\img001.jpg", @"C:\images2\02\img002.jpg", })]
 		public void ImportFilePathProvider_GetFilePaths(int id, string[] specs, string dir, string[] expected) {
 			Logger.LogMessage($"Testing {id}: {string.Join(' ', specs)}");
 
