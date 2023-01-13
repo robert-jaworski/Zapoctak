@@ -36,7 +36,21 @@ if (command.Command == "debug") {
 	} else {
 		Console.WriteLine("Parsed successfully");
 		Console.WriteLine("\nFiles: ");
-		Console.Write(string.Join('\n', files.GetFilePaths(new DirectoryFileSystemProvider(command.AlbumDirectory), errHandler)));
+		var fs = new DirectoryFileSystemProvider(command.AlbumDirectory);
+		foreach (var file in files.GetFilePaths(fs, errHandler)) {
+			Console.WriteLine($"{file}:");
+			foreach (var dir in fs.GetFileInfo(file)) {
+				Console.WriteLine($"\t{dir.Name}:");
+				foreach (var tag in dir.Tags) {
+					Console.WriteLine($"\t\t{tag.Name} = {tag.Description}");
+				}
+			}
+			Console.WriteLine("Test FileInfoProvider:");
+			var infoProvider = new NormalFileInfoProvider();
+			var info = infoProvider.GetInfo(file, fs);
+			Console.WriteLine($"\tDate/Time = {info.SuitableDateTime}");
+			Console.WriteLine($"\tDevice = {info.DeviceName}");
+		}
 		if (errHandler.IsError) {
 			Console.WriteLine("\nErrors: ");
 			Console.Write(string.Join('\n', errHandler.GetUnprocessed()));

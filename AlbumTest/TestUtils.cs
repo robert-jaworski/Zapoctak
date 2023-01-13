@@ -27,6 +27,22 @@ namespace AlbumTest {
 		public string GetFullPath(string relPath) {
 			return Path.GetFullPath(Path.Combine(Directory, relPath));
 		}
+
+		public DateTime FileCreation(string fullPath) {
+			throw new NotImplementedException();
+		}
+
+		public DateTime FileModification(string fullPath) {
+			throw new NotImplementedException();
+		}
+
+		public Stream OpenFile(string fullPath) {
+			throw new NotImplementedException();
+		}
+
+		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath) {
+			throw new NotImplementedException();
+		}
 	}
 
 	internal class ErrorTestFailHandler : IErrorHandler {

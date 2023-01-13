@@ -2,6 +2,8 @@
 
 Program na snadné spravování rodinných fotek - import, tøídìní do složek, pøejmenování, backup, kontrola duplikátù atd.
 
+Na ètení EXIF dat byla použita následující knihovna: https://drewnoakes.com/code/exif/
+
 ## Plán
 
 - [ ] Jednoduché importování fotek (seznam fotek, cílový adresáø)

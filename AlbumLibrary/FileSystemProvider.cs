@@ -5,6 +5,12 @@
 		bool FileExists(string fullPath);
 		bool DirectoryExists(string fullPath);
 		IEnumerable<string> EnumerateFiles(string fullPath);
+
+		DateTime FileCreation(string fullPath);
+		DateTime FileModification(string fullPath);
+
+		Stream OpenFile(string fullPath);
+		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath);
 	}
 
 	public class DirectoryFileSystemProvider : IFileSystemProvider {
@@ -28,6 +34,22 @@
 
 		public string GetFullPath(string relPath) {
 			return Path.GetFullPath(Path.Combine(DirectoryName, relPath));
+		}
+
+		public DateTime FileCreation(string fullPath) {
+			return File.GetCreationTime(fullPath);
+		}
+
+		public DateTime FileModification(string fullPath) {
+			return File.GetLastWriteTime(fullPath);
+		}
+
+		public Stream OpenFile(string fullPath) {
+			return File.OpenRead(fullPath);
+		}
+
+		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath) {
+			return MetadataExtractor.ImageMetadataReader.ReadMetadata(fullPath);
 		}
 	}
 }
