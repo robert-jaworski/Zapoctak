@@ -2,6 +2,9 @@
 using System.Text.RegularExpressions;
 
 namespace AlbumConsole {
+	/// <summary>
+	/// Class which defines a command which can be run. This includes the arguments the command takes and the code that will be run.
+	/// </summary>
 	public class Command {
 		public static CLIDefinition UniversalParameters { get; } = new CLIDefinition("general parameters", new List<ArgumentDefinition> {
 			new ArgumentDefinition("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
@@ -89,6 +92,9 @@ namespace AlbumConsole {
 		public InternalException(string msg) : base(msg) { }
 	}
 
+	/// <summary>
+	/// A class containing the code from the default commands
+	/// </summary>
 	public static class DefaultCommandsActions {
 		public static CommandResult Help(CommandArguments args) {
 			var cmd = args.GetArgument<StringArgument>("command").Value;

@@ -1,5 +1,8 @@
 ﻿namespace AlbumLibrary {
 	namespace CLI {
+		/// <summary>
+		/// Class defining the types and names of arguments that a command will take
+		/// </summary>
 		public class CLIDefinition {
 			protected List<ArgumentDefinition> Arguments { get; }
 			protected List<CLIDefinition> Include { get; }
@@ -43,22 +46,32 @@
 				}
 			}
 
+			/// <summary>
+			/// Extracts argument values from an argument list
+			/// </summary>
+			/// <param name="args">Command line arguments to parse</param>
+			/// <returns>The values of the specified arguments or the default values</returns>
+			/// <exception cref="CLIArgumentException"></exception>
+			/// <exception cref="CLIUnknownArgumentException"></exception>
 			public Dictionary<string, IArgument> GetArguments(string[] args) {
 				var named = new Dictionary<string, IArgument>();
 
 				var en = new ArgumentIterator(args);
-				var i = 0;
-				while (en.MoveNext()) {
+				var i = 0; // implicit argument index
+				while (en.Valid) {
 					try {
 						if (en.Current.StartsWith("--")) {
 							if (NameMap.TryGetValue(en.Current[2..], out ArgumentDefinition? a)) {
 								if (named.ContainsKey(a.Name))
 									throw new CLIArgumentException($"Duplicate argument: {a.Name}", named);
+								en.MoveNext();
 								named[a.Name] = a.ExtractValue(en);
 							} else
 								throw new CLIUnknownArgumentException($"Unknown argument: {en.Current}", named);
 						} else if (en.Current.StartsWith("-")) {
-							foreach (var ch in en.Current[1..]) {
+							var curr = en.Current[1..];
+							en.MoveNext();
+							foreach (var ch in curr) {
 								if (ShortNameMap.TryGetValue(ch, out ArgumentDefinition? a)) {
 									if (named.ContainsKey(a.Name))
 										throw new CLIArgumentException($"Duplicate argument: {a.Name}", named);
@@ -73,7 +86,7 @@
 									throw new CLIArgumentException($"Unexpected implicit argument: {en.Current}", named);
 							}
 							var a = ImplicitArguments[i++];
-							named[a.Name] = a.ExtractValue(en, true);
+							named[a.Name] = a.ExtractValue(en);
 						} else {
 							throw new CLIArgumentException($"Unexpected implicit argument: {en.Current}", named);
 						}
@@ -131,6 +144,9 @@
 			Files
 		}
 
+		/// <summary>
+		/// The definition of an argument
+		/// </summary>
 		public class ArgumentDefinition {
 			public string Name { get; }
 			public char ShortName { get; }
@@ -157,34 +173,31 @@
 					Description = $"[{Description}]";
 			}
 
-			internal IArgument ExtractValue(ArgumentIterator en, bool isImplicit = false) {
+			internal IArgument ExtractValue(ArgumentIterator en) {
 				switch (Type) {
 				case CLIArgumentType.Flag:
 					return new FlagArgument(true);
 				case CLIArgumentType.Number:
-					if (!isImplicit && !en.MoveNext())
+					if (!en.Valid)
 						throw new CLIArgumentExtractValueException($"Argument {Name} requires a number but nothing was given");
 					int x;
 					if (int.TryParse(en.Current, out x)) {
+						en.MoveNext();
 						return new NumberArgument(x);
 					}
 					throw new CLIArgumentExtractValueException($"Argument {Name} requires a number but '{en.Current}' was given");
 				case CLIArgumentType.String:
-					if (!isImplicit && !en.MoveNext())
+					if (!en.Valid)
 						throw new CLIArgumentExtractValueException($"Argument {Name} requires a string but nothing was given");
-					return new StringArgument(en.Current);
+					return new StringArgument(en.Extract());
 				case CLIArgumentType.Files:
 					var files = new List<string>();
-					if (isImplicit) {
-						if (en.Current.StartsWith("-")) {
-							en.MoveBack();
-							return new FilesArgument(files);
-						}
-						files.Add(en.Current);
+					if (en.Current.StartsWith("-")) {
+						return new FilesArgument(files);
 					}
+					files.Add(en.Current);
 					while (en.MoveNext()) {
 						if (en.Current.StartsWith("-")) {
-							en.MoveBack();
 							break;
 						}
 						files.Add(en.Current);
@@ -196,6 +209,9 @@
 			}
 		}
 
+		/// <summary>
+		/// Interface for different types of arguments
+		/// </summary>
 		public interface IArgument { }
 
 		public class FlagArgument : IArgument {
@@ -296,12 +312,13 @@
 		internal class ArgumentIterator {
 			protected string[] Args { get; }
 
-			protected int Index { get; set; } = -1;
+			protected int Index { get; set; } = 0;
 
 			public ArgumentIterator(string[] args) {
 				Args = args;
 			}
 
+			public bool Valid => 0 <= Index && Index < Args.Length;
 			public string Current => Args[Index];
 
 			public bool MoveNext() {
@@ -314,6 +331,10 @@
 				if (Index >= 0)
 					Index--;
 				return Index >= 0;
+			}
+
+			public string Extract() {
+				return Args[Index++];
 			}
 		}
 

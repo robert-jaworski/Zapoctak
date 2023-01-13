@@ -1,6 +1,9 @@
 ﻿using AlbumLibrary.CLI;
 
 namespace AlbumConsole {
+	/// <summary>
+	/// Class which stores the information about all the command line arguments supplied
+	/// </summary>
 	public class CommandArguments {
 		public string ExecutableDirectory { get; }
 		public string AlbumDirectory { get; }
@@ -48,6 +51,13 @@ namespace AlbumConsole {
 			return new CommandArguments(exeDir, albumDir, cmd, parsedArgs);
 		}
 
+		/// <summary>
+		/// Get the specified argument as the specified type.
+		/// </summary>
+		/// <typeparam name="T">The expected type</typeparam>
+		/// <param name="name">The name of the argument</param>
+		/// <returns></returns>
+		/// <exception cref="InternalException"></exception>
 		public T GetArgument<T>(string name) where T : IArgument {
 			if (!NamedArguments.ContainsKey(name))
 				throw new InternalException($"There is no argument named {name}");
