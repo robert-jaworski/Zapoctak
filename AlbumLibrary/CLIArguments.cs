@@ -1,84 +1,140 @@
 ﻿namespace AlbumLibrary {
 	namespace CLI {
+		/// <summary>
+		/// Class defining the types and names of arguments that a command will take
+		/// </summary>
 		public class CLIDefinition {
-			public List<ArgumentDefinition> Arguments { get; }
-			public List<CLIDefinition> Include { get; }
+			protected List<ArgumentDefinition> Arguments { get; }
+			protected List<CLIDefinition> Include { get; }
 
-			public Dictionary<string, ArgumentDefinition> NameMap { get; }
-			public Dictionary<char, ArgumentDefinition> ShortNameMap { get; }
-			public List<ArgumentDefinition> ImplicitArguments { get; }
+			protected Dictionary<string, ArgumentDefinition> NameMap { get; }
+			protected Dictionary<char, ArgumentDefinition> ShortNameMap { get; }
+			protected List<ArgumentDefinition> ImplicitArguments { get; }
 
-			public CLIDefinition(List<ArgumentDefinition> args) : this(args, new List<CLIDefinition>()) { }
+			public string Name { get; }
+			public string Description { get; }
 
-			public CLIDefinition(List<ArgumentDefinition> args, List<CLIDefinition> include) {
+			public CLIDefinition(string name, List<ArgumentDefinition> args) : this(name, args, new List<CLIDefinition>()) { }
+
+			public CLIDefinition(string name, List<ArgumentDefinition> args, List<CLIDefinition> include) {
+				Name = name;
 				Arguments = args;
 				Include = include;
 				NameMap = new Dictionary<string, ArgumentDefinition>();
 				ShortNameMap = new Dictionary<char, ArgumentDefinition>();
 				ImplicitArguments = Arguments.Where(a => a.IsImplicit).ToList();
+
+				var desc = new List<string>();
 				foreach (var a in Arguments) {
 					if (!NameMap.TryAdd(a.Name, a))
-						throw new ArgumentException($"Duplicate argument name: {a.Name}");
+						throw new CLIDefinitionException($"Duplicate argument name: {a.Name}");
 					if (a.ShortName != ' ')
 						if (!ShortNameMap.TryAdd(a.ShortName, a))
-							throw new ArgumentException($"Duplicate argument short name: {a.ShortName}");
+							throw new CLIDefinitionException($"Duplicate argument short name: {a.ShortName}");
+					desc.Add(a.Description);
 				}
+				Description = string.Join(' ', desc);
+
 				foreach (var i in Include) {
 					foreach (var a in i.Arguments) {
 						if (!NameMap.TryAdd(a.Name, a))
-							throw new ArgumentException($"Duplicate argument name: {a.Name}");
+							throw new CLIDefinitionException($"Duplicate argument name: {a.Name}");
 						if (a.ShortName != ' ')
 							if (!ShortNameMap.TryAdd(a.ShortName, a))
-								throw new ArgumentException($"Duplicate argument short name: {a.ShortName}");
+								throw new CLIDefinitionException($"Duplicate argument short name: {a.ShortName}");
 					}
 				}
 			}
 
+			/// <summary>
+			/// Extracts argument values from an argument list
+			/// </summary>
+			/// <param name="args">Command line arguments to parse</param>
+			/// <returns>The values of the specified arguments or the default values</returns>
+			/// <exception cref="CLIArgumentException"></exception>
+			/// <exception cref="CLIUnknownArgumentException"></exception>
 			public Dictionary<string, IArgument> GetArguments(string[] args) {
 				var named = new Dictionary<string, IArgument>();
 
 				var en = new ArgumentIterator(args);
-				var i = 0;
-				while (en.MoveNext()) {
-					if (en.Current.StartsWith("--")) {
-						if (NameMap.TryGetValue(en.Current[2..], out ArgumentDefinition? a)) {
-							if (named.ContainsKey(a.Name))
-								throw new ArgumentException($"Duplicate argument: {a.Name}");
-							named[a.Name] = a.ExtractValue(en);
-						} else
-							throw new NotSupportedException($"Unknown argument: {en.Current}");
-					} else if (en.Current.StartsWith("-")) {
-						foreach (var ch in en.Current[1..]) {
-							if (ShortNameMap.TryGetValue(ch, out ArgumentDefinition? a)) {
+				var i = 0; // implicit argument index
+				while (en.Valid) {
+					try {
+						if (en.Current.StartsWith("--")) {
+							if (NameMap.TryGetValue(en.Current[2..], out ArgumentDefinition? a)) {
 								if (named.ContainsKey(a.Name))
-									throw new ArgumentException($"Duplicate argument: {a.Name}");
+									throw new CLIArgumentException($"Duplicate argument: {a.Name}", named);
+								en.MoveNext();
 								named[a.Name] = a.ExtractValue(en);
 							} else
-								throw new NotSupportedException($"Unknown argument: -{ch}");
+								throw new CLIUnknownArgumentException($"Unknown argument: {en.Current}", named);
+						} else if (en.Current.StartsWith("-")) {
+							var curr = en.Current[1..];
+							en.MoveNext();
+							foreach (var ch in curr) {
+								if (ShortNameMap.TryGetValue(ch, out ArgumentDefinition? a)) {
+									if (named.ContainsKey(a.Name))
+										throw new CLIArgumentException($"Duplicate argument: {a.Name}", named);
+									named[a.Name] = a.ExtractValue(en);
+								} else
+									throw new CLIUnknownArgumentException($"Unknown argument: -{ch}", named);
+							}
+						} else if (i < ImplicitArguments.Count) {
+							while (named.ContainsKey(ImplicitArguments[i].Name)) {
+								i++;
+								if (i >= ImplicitArguments.Count)
+									throw new CLIArgumentException($"Unexpected implicit argument: {en.Current}", named);
+							}
+							var a = ImplicitArguments[i++];
+							named[a.Name] = a.ExtractValue(en);
+						} else {
+							throw new CLIArgumentException($"Unexpected implicit argument: {en.Current}", named);
 						}
-					} else if (i < ImplicitArguments.Count) {
-						while (named.ContainsKey(ImplicitArguments[i].Name)) {
-							i++;
-							if (i >= ImplicitArguments.Count)
-								throw new ArgumentException($"Unexpected implicit argument: {en.Current}");
-						}
-						var a = ImplicitArguments[i++];
-						named[a.Name] = a.ExtractValue(en, true);
-					} else {
-						throw new ArgumentException($"Unexpected implicit argument: {en.Current}");
+					} catch (CLIArgumentExtractValueException e) {
+						throw new CLIArgumentException(e.Message, named);
 					}
 				}
 
 				foreach (var x in NameMap) {
 					if (!named.ContainsKey(x.Key)) {
 						if (x.Value.DefaultValue is null)
-							throw new ArgumentException($"Missing required parameter: {x.Key}");
+							throw new CLIArgumentException($"Missing required parameter: {x.Key}", named);
 						named[x.Key] = x.Value.DefaultValue;
 					}
 				}
 
 				return named;
 			}
+
+			public string GetFullDescription(int recurse) {
+				if (Include.Count == 0) {
+					return Description;
+				}
+				if (recurse == 0) {
+					return string.Join(' ', from i in Include select $"{{{i.Name}}}") + " " + Description;
+				}
+				return string.Join(' ', from i in Include select i.GetFullDescription(recurse - 1)) + " " + Description;
+			}
+		}
+
+		public class CLIDefinitionException : Exception {
+			public CLIDefinitionException(string msg) : base(msg) { }
+		}
+
+		public class CLIArgumentException : Exception {
+			public Dictionary<string, IArgument> ProcessedArgs { get; set; }
+
+			public CLIArgumentException(string msg, Dictionary<string, IArgument> processedArgs) : base(msg) {
+				ProcessedArgs = processedArgs;
+			}
+		}
+
+		public class CLIArgumentExtractValueException : Exception {
+			public CLIArgumentExtractValueException(string msg) : base(msg) { }
+		}
+
+		public class CLIUnknownArgumentException : CLIArgumentException {
+			public CLIUnknownArgumentException(string msg, Dictionary<string, IArgument> processedArgs) : base(msg, processedArgs) { }
 		}
 
 		public enum CLIArgumentType {
@@ -88,6 +144,9 @@
 			Files
 		}
 
+		/// <summary>
+		/// The definition of an argument
+		/// </summary>
 		public class ArgumentDefinition {
 			public string Name { get; }
 			public char ShortName { get; }
@@ -95,42 +154,50 @@
 			public IArgument? DefaultValue { get; }
 			public bool IsImplicit { get; }
 
+			public string Description { get; }
+
 			public ArgumentDefinition(string name, char shortName, CLIArgumentType type, IArgument? defaultValue, bool isImplicit) {
 				Name = name;
 				ShortName = shortName;
 				Type = type;
 				DefaultValue = defaultValue;
 				IsImplicit = isImplicit;
+
+				var valueDesc = type.GetName();
+				var valueSep = string.IsNullOrEmpty(valueDesc) ? "" : " ";
+				var nameDesc = ShortName == ' ' ? $"--{Name}" : $"-{ShortName}/--{Name}";
+				if (IsImplicit)
+					nameDesc = $"[{nameDesc}]";
+				Description = $"{nameDesc}{valueSep}{valueDesc}";
+				if (DefaultValue is not null)
+					Description = $"[{Description}]";
 			}
 
-			internal IArgument ExtractValue(ArgumentIterator en, bool isImplicit = false) {
+			internal IArgument ExtractValue(ArgumentIterator en) {
 				switch (Type) {
 				case CLIArgumentType.Flag:
 					return new FlagArgument(true);
 				case CLIArgumentType.Number:
-					if (!isImplicit && !en.MoveNext())
-						throw new ArgumentException($"Argument {Name} requires a number but nothing was given");
+					if (!en.Valid)
+						throw new CLIArgumentExtractValueException($"Argument {Name} requires a number but nothing was given");
 					int x;
 					if (int.TryParse(en.Current, out x)) {
+						en.MoveNext();
 						return new NumberArgument(x);
 					}
-					throw new ArgumentException($"Argument {Name} requires a number but '{en.Current}' was given");
+					throw new CLIArgumentExtractValueException($"Argument {Name} requires a number but '{en.Current}' was given");
 				case CLIArgumentType.String:
-					if (!isImplicit && !en.MoveNext())
-						throw new ArgumentException($"Argument {Name} requires a string but nothing was given");
-					return new StringArgument(en.Current);
+					if (!en.Valid)
+						throw new CLIArgumentExtractValueException($"Argument {Name} requires a string but nothing was given");
+					return new StringArgument(en.Extract());
 				case CLIArgumentType.Files:
 					var files = new List<string>();
-					if (isImplicit) {
-						if (en.Current.StartsWith("-")) {
-							en.MoveBack();
-							return new FilesArgument(files);
-						}
-						files.Add(en.Current);
+					if (en.Current.StartsWith("-")) {
+						return new FilesArgument(files);
 					}
+					files.Add(en.Current);
 					while (en.MoveNext()) {
 						if (en.Current.StartsWith("-")) {
-							en.MoveBack();
 							break;
 						}
 						files.Add(en.Current);
@@ -142,6 +209,9 @@
 			}
 		}
 
+		/// <summary>
+		/// Interface for different types of arguments
+		/// </summary>
 		public interface IArgument { }
 
 		public class FlagArgument : IArgument {
@@ -242,12 +312,13 @@
 		internal class ArgumentIterator {
 			protected string[] Args { get; }
 
-			protected int Index { get; set; } = -1;
+			protected int Index { get; set; } = 0;
 
 			public ArgumentIterator(string[] args) {
 				Args = args;
 			}
 
+			public bool Valid => 0 <= Index && Index < Args.Length;
 			public string Current => Args[Index];
 
 			public bool MoveNext() {
@@ -261,12 +332,26 @@
 					Index--;
 				return Index >= 0;
 			}
+
+			public string Extract() {
+				return Args[Index++];
+			}
 		}
 
-		internal static class EnumeratorExtensions {
+		internal static class Extensions {
 			public static IEnumerable<T> ToEnumerable<T>(this IEnumerator<T> enumerator) {
 				while (enumerator.MoveNext())
 					yield return enumerator.Current;
+			}
+
+			public static string GetName(this CLIArgumentType type) {
+				return type switch {
+					CLIArgumentType.Flag => "",
+					CLIArgumentType.Number => "{number}",
+					CLIArgumentType.String => "{string}",
+					CLIArgumentType.Files => "{file list}",
+					_ => throw new NotImplementedException($"Unimplemented argument type: {type}"),
+				};
 			}
 		}
 	}
