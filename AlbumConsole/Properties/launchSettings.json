@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "AlbumConsole": {
+      "commandName": "Project",
+      "commandLineArgs": "interactive"
+    }
+  }
+}

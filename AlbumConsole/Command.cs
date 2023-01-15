@@ -34,8 +34,18 @@ namespace AlbumConsole {
 			}, DefaultCommandsActions.Interactive) },
 			{ "metadata", new Command("metadata", "Show the metadata of specified images. Use --verbose to show all available metadata.",
 				new List<ArgumentDefinition> {
-				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, null, true)
-			}, DefaultCommandsActions.Metadata) }
+				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, null, true),
+				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgumentDefinition("count", 'c', CLIArgumentType.Number, new NumberArgument(-1), false),
+			}, DefaultCommandsActions.Metadata) },
+			{ "import", new Command("import", "Imports specified files into the album.",
+				new List<ArgumentDefinition> {
+				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, null, true),
+				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgumentDefinition("template", 't', CLIArgumentType.String, new StringArgument(@"{YYYY}/{MM}/{YYYY}{MM}{DD}-{hh}{mm}{ss}"), false),
+				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+			}, DefaultCommandsActions.Import) }
 		};
 
 		public string Name { get; }
@@ -101,6 +111,58 @@ namespace AlbumConsole {
 	/// A class containing the code from the default commands
 	/// </summary>
 	public static class DefaultCommandsActions {
+		public static bool RequiresConfirmation(CommandArguments args) {
+			if (args.HasArgument<FlagArgument>("yes") && args.GetArgument<FlagArgument>("yes").IsSet) {
+				if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet)
+					return true;
+				return false;
+			}
+			if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet) {
+				return false;
+			}
+			return true;
+		}
+
+		public static bool Confirm(CommandArguments args, string msg) {
+			if (args.HasArgument<FlagArgument>("yes") && args.GetArgument<FlagArgument>("yes").IsSet) {
+				if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet)
+					return ConfirmPrompt(msg, true);
+				return true;
+			}
+			if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet) {
+				return false;
+			}
+			return ConfirmPrompt(msg);
+		}
+
+		public static bool ConfirmPrompt(string msg, bool mixed = false) {
+			if (mixed)
+				Console.WriteLine("You are sending mixed messages - both --yes and --no set!");
+
+			Console.Write(msg);
+			Console.Write(" (Y/N): ");
+			var key = Console.ReadKey();
+			Console.WriteLine();
+			if (key.Key == ConsoleKey.Y)
+				return true;
+			if (key.Key == ConsoleKey.N)
+				return false;
+
+			while (true) {
+				Console.Write("Please type Y or N: ");
+				key = Console.ReadKey();
+				Console.WriteLine();
+				if (key.Key == ConsoleKey.Y)
+					return true;
+				if (key.Key == ConsoleKey.N)
+					return false;
+			}
+		}
+
+		public static HashSet<string> GetExtensions(CommandArguments args) {
+			return new HashSet<string>(args.GetArgument<StringArgument>("extensions").Value.Split(',').Select(x => x.StartsWith(".") ? x : "." + x));
+		}
+
 		public static CommandResult Help(CommandArguments args) {
 			var cmd = args.GetArgument<StringArgument>("command").Value;
 			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
@@ -136,13 +198,29 @@ namespace AlbumConsole {
 					break;
 				if (string.IsNullOrWhiteSpace(cmd))
 					continue;
-				var input = new Regex(@"\s+").Split(cmd);
-				var newArgs = (new string[] {
-					args.ExecutableDirectory + Path.DirectorySeparatorChar, input[0], "--album-dir", dir
-				}).Concat(input[1..]);
+
+				var m = new Regex(@"'([^']+)'|""([^\\""]+)""|\S+").Matches(cmd);
+				var parsedArgs = m.Select(x => x.Groups[1].Success ? x.Groups[1].Value : x.Groups[2].Success ? x.Groups[2].Value : x.Value).ToArray();
+
+				IEnumerable<string> newArgs;
+				if (parsedArgs.Any(x => x.StartsWith("--") ? x == "--album-dir" : x.StartsWith("-") ? x.Contains("d") : false)) {
+					newArgs = (new string[] {
+						args.ExecutableDirectory + Path.DirectorySeparatorChar, parsedArgs[0],
+					}).Concat(parsedArgs[1..]);
+				} else {
+					newArgs = (new string[] {
+						args.ExecutableDirectory + Path.DirectorySeparatorChar, parsedArgs[0], "--album-dir", dir
+					}).Concat(parsedArgs[1..]);
+				}
+
+				if (verbose) {
+					if (!parsedArgs.Any(x => x == "-v" || x == "--verbose")) {
+						newArgs = newArgs.Concat(new string[] { "--verbose" });
+					}
+				}
 
 				try {
-					args = CommandArguments.ParseArguments(verbose ? newArgs.Concat(new string[] { "--verbose" }).ToArray() : newArgs.ToArray());
+					args = CommandArguments.ParseArguments(verbose ? newArgs.ToArray() : newArgs.ToArray());
 				} catch (CLIArgumentException e) {
 					if (strict)
 						return new CommandResult(false, new List<string> {
@@ -182,16 +260,20 @@ namespace AlbumConsole {
 
 		public static CommandResult Metadata(CommandArguments args) {
 			var errHandler = new ErrorListHandler();
-			var files = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files,
-				new HashSet<string> { ".jpg" }, errHandler);
+			var files = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files, GetExtensions(args), errHandler);
 			if (errHandler.IsError)
 				return new CommandResult(false, errHandler.GetUnprocessed().ToList());
 
-			var fs = new DirectoryFileSystemProvider(".");
+			var fs = new NormalFileSystemProvider(".");
 
 			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
+			var maxCount = args.GetArgument<NumberArgument>("count").Value;
+			var count = 0;
+
 			if (verbose) {
 				foreach (var file in files.GetFilePaths(fs, errHandler)) {
+					if (count++ == maxCount)
+						break;
 					Console.WriteLine($"{file}:");
 					foreach (var dir in fs.GetFileInfo(file)) {
 						Console.WriteLine($"\t{dir.Name}:");
@@ -203,15 +285,19 @@ namespace AlbumConsole {
 					var infoProvider = new NormalFileInfoProvider();
 					var info = infoProvider.GetInfo(file, fs);
 					Console.WriteLine($"\tDate/Time = {info.SuitableDateTime}");
+					Console.WriteLine("\tExif Date/Time = " + (info.EXIFDateTime is not null ? info.EXIFDateTime : "Unavailable"));
 					Console.WriteLine($"\tDevice = {info.DeviceName}");
 					Console.WriteLine();
 				}
 			} else {
 				foreach (var file in files.GetFilePaths(fs, errHandler)) {
+					if (count++ == maxCount)
+						break;
 					Console.WriteLine($"{file}:");
 					var infoProvider = new NormalFileInfoProvider();
 					var info = infoProvider.GetInfo(file, fs);
 					Console.WriteLine($"\tDate/Time = {info.SuitableDateTime}");
+					Console.WriteLine("\tExif Date/Time = " + (info.EXIFDateTime is not null ? info.EXIFDateTime : "Unavailable"));
 					Console.WriteLine($"\tDevice = {info.DeviceName}");
 					Console.WriteLine();
 				}
@@ -224,6 +310,73 @@ namespace AlbumConsole {
 			if (errHandler.IsError)
 				return new CommandResult(false, errHandler.GetUnprocessed().Concat(new List<string> { string.Empty }).Concat(msg).ToList());
 			return new CommandResult(true, msg);
+		}
+
+		public static CommandResult Import(CommandArguments args) {
+			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
+
+			var fileInfoProvider = new NormalFileInfoProvider();
+			IImportListProvider importListProvider = new ImportListProvider();
+			IFileNameProvider fileNameProvider;
+
+			try {
+				fileNameProvider = TemplateFileNameProvider.MultipleTemplates(args.GetArgument<StringArgument>("template").Value.Split(','));
+			} catch (InvalidFileNameTemplateException e) {
+				return new CommandResult(false, new List<string> { "Invalid file name template!", e.Message });
+			}
+
+			IErrorHandler errHandler = new ErrorListHandler();
+			var files = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files, GetExtensions(args), errHandler);
+			if (errHandler.IsError)
+				return new CommandResult(false, errHandler.GetUnprocessed().ToList());
+
+			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("album-dir").Value);
+			errHandler = new ErrorLogHandler();
+
+			IEnumerable<ImportItem> items;
+
+			if (RequiresConfirmation(args) || !Confirm(args, "You should never see this message.")) {
+				if (!verbose)
+					errHandler = new ErrorListHandler();
+				var importList = importListProvider.GetImportList(fileSystem, files, fileInfoProvider, fileNameProvider, errHandler);
+				if (verbose) {
+					Console.WriteLine("Summary:");
+					foreach (var item in importList.AllItems) {
+						if (item.Cancelled)
+							Console.WriteLine($"{item.SourcePath} -- Cancelled");
+						else
+							Console.WriteLine($"{item.SourcePath} -> {item.DestinationPath}");
+					}
+					Console.WriteLine();
+				}
+				Console.WriteLine($"Targeted {importList.AllItems.Count} files. Will import {importList.ImportItems.Count} files," +
+					$" {importList.CancelledItems.Count} files have been cancelled.\n");
+				if (Confirm(args, "Do you wish to proceed?")) {
+					items = importList.ImportItems;
+				} else {
+					return new CommandResult(true, "Cancelled by user");
+				}
+				if (!verbose)
+					errHandler = new ErrorLogHandler();
+			} else {
+				items = importListProvider.GetImportItems(fileSystem, files, fileInfoProvider, fileNameProvider, errHandler);
+			}
+
+			//if (errHandler.IsError)
+			//	return new CommandResult(false, errHandler.GetUnprocessed().ToList());
+
+			var count = 0;
+			foreach (var item in items) {
+				if (!item.Cancelled) {
+					Console.Write($"Importing {item.SourcePath} -> {item.DestinationPath}");
+					// TODO
+					Console.WriteLine(" (not implemented)");
+					count++;
+				}
+			}
+
+			Console.WriteLine();
+			return new CommandResult(true, errHandler.GetAll().ToList());
 		}
 	}
 }

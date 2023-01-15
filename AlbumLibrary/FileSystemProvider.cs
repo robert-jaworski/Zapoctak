@@ -2,6 +2,9 @@
 	public interface IFileSystemProvider {
 		string GetFullPath(string relPath);
 
+		string GetAlbumDirectory();
+		string GetFullPathAlbum(string pathInAlbum);
+
 		bool FileExists(string fullPath);
 		bool DirectoryExists(string fullPath);
 		IEnumerable<string> EnumerateFiles(string fullPath);
@@ -14,11 +17,11 @@
 		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath);
 	}
 
-	public class DirectoryFileSystemProvider : IFileSystemProvider {
-		protected string DirectoryName { get; }
+	public class NormalFileSystemProvider : IFileSystemProvider {
+		protected string AlbumDirectory { get; }
 		
-		public DirectoryFileSystemProvider(string directoryName) {
-			DirectoryName = directoryName;
+		public NormalFileSystemProvider(string albumDirectory) {
+			AlbumDirectory = albumDirectory;
 		}
 
 		public bool DirectoryExists(string fullPath) {
@@ -38,7 +41,7 @@
 		}
 
 		public string GetFullPath(string relPath) {
-			return Path.GetFullPath(Path.Combine(DirectoryName, relPath));
+			return Path.GetFullPath(relPath);
 		}
 
 		public DateTime FileCreation(string fullPath) {
@@ -55,6 +58,14 @@
 
 		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath) {
 			return MetadataExtractor.ImageMetadataReader.ReadMetadata(fullPath);
+		}
+
+		public string GetAlbumDirectory() {
+			return AlbumDirectory;
+		}
+
+		public string GetFullPathAlbum(string pathInAlbum) {
+			return GetFullPath(Path.Combine(AlbumDirectory, pathInAlbum));
 		}
 	}
 }

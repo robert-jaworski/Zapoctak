@@ -65,5 +65,13 @@ namespace AlbumConsole {
 				throw new InternalException($"Argument {name} has the wrong type");
 			return (T)NamedArguments[name];
 		}
+
+		public bool HasArgument<T>(string name) where T : IArgument {
+			if (!NamedArguments.ContainsKey(name))
+				return false;
+			if (NamedArguments[name] is not T)
+				return false;
+			return true;
+		}
 	}
 }

@@ -136,7 +136,7 @@
 							paths.Push(dir);
 						}
 					}
-					if (files == 0 && dirs == 0) {
+					else if (files == 0 && dirs == 0) {
 						errorHandler.Error($"No suitable files found in directory: {p}");
 					}
 				} else {

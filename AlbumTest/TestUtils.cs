@@ -59,16 +59,29 @@ namespace AlbumTest {
 		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath) {
 			throw new NotImplementedException();
 		}
+
+		public string GetAlbumDirectory() {
+			throw new NotImplementedException();
+		}
+
+		public string GetFullPathAlbum(string pathInAlbum) {
+			throw new NotImplementedException();
+		}
 	}
 
 	internal class ErrorTestFailHandler : IErrorHandler {
 		public bool IsError => false;
+		public bool WasError => false;
 
 		public void Error(string message) {
 			Assert.Fail($"Unexpected error: {message}");
 		}
 
 		public IEnumerable<string> GetUnprocessed() {
+			return Array.Empty<string>();
+		}
+
+		public IEnumerable<string> GetAll() {
 			return Array.Empty<string>();
 		}
 	}

@@ -1,10 +1,5 @@
 ﻿using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AlbumLibrary {
 	public interface IFileInfoProvider {
@@ -12,25 +7,32 @@ namespace AlbumLibrary {
 	}
 
 	public class FileInfo {
+		public string OriginalFileName { get; }
+		public string OriginalFileExtension { get; }
+		public string OriginalFilePath { get; }
+
 		public DateTime? EXIFDateTime { get; }
 		public DateTime FileCreation { get; }
 		public DateTime FileModification { get; }
+		public DateTime? OverwriteDateTime { get; set; }
 
-		public DateTime SuitableDateTime { get; }
+		public DateTime SuitableDateTime => OverwriteDateTime ?? EXIFDateTime ?? FileCreation;
 
 		public string? Manufacturer { get; }
 		public string? Model { get; }
 
-		public string DeviceName { get; }
+		public string? DeviceName { get; }
 
-		public FileInfo(DateTime? exifDateTime, DateTime fileCreation, DateTime fileModification, string? manufacturer, string? model) {
+		public FileInfo(string path, DateTime? exifDateTime, DateTime fileCreation, DateTime fileModification, string? manufacturer, string? model) {
+			OriginalFileName = Path.GetFileName(path);
+			OriginalFileExtension = Path.GetExtension(path);
+			OriginalFilePath = path;
 			EXIFDateTime = exifDateTime;
 			FileCreation = fileCreation;
 			FileModification = fileModification;
-			SuitableDateTime = EXIFDateTime ?? fileCreation;
 			Manufacturer = manufacturer;
 			Model = model;
-			DeviceName = (manufacturer is null ? "" : manufacturer + " ") + (model ?? "");
+			DeviceName = manufacturer is null && model is null ? null : (manufacturer is null ? "" : manufacturer + " ") + (model ?? "");
 		}
 	}
 
@@ -58,7 +60,7 @@ namespace AlbumLibrary {
 			var make = ifd0Directory?.GetDescription(ExifDirectoryBase.TagMake);
 			var model = ifd0Directory?.GetDescription(ExifDirectoryBase.TagModel);
 
-			return new FileInfo(exifDT, fileCreation, fileModification, make, model);
+			return new FileInfo(fullPath, exifDT, fileCreation, fileModification, make, model);
 		}
 	}
 }
