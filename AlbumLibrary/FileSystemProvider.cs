@@ -1,6 +1,7 @@
 ﻿namespace AlbumLibrary {
 	public interface IFileSystemProvider {
 		string GetFullPath(string relPath);
+		string GetRelativePath(string relativeTo, string path);
 
 		string GetAlbumDirectory();
 		string GetFullPathAlbum(string pathInAlbum);
@@ -15,6 +16,9 @@
 
 		Stream OpenFile(string fullPath);
 		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath);
+
+		public void CopyFile(string srcPath, string destPath, bool overwrite = false);
+		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false);
 	}
 
 	public class NormalFileSystemProvider : IFileSystemProvider {
@@ -66,6 +70,19 @@
 
 		public string GetFullPathAlbum(string pathInAlbum) {
 			return GetFullPath(Path.Combine(AlbumDirectory, pathInAlbum));
+		}
+
+		public void CopyFile(string srcPath, string destPath, bool overwrite = false) {
+			File.Copy(srcPath, destPath, overwrite);
+		}
+
+		public string GetRelativePath(string relativeTo, string path) {
+			return Path.GetRelativePath(relativeTo, path);
+		}
+
+		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
+			Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+			CopyFile(srcPath, destPath, overwrite);
 		}
 	}
 }

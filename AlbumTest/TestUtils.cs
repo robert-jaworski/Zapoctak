@@ -67,6 +67,18 @@ namespace AlbumTest {
 		public string GetFullPathAlbum(string pathInAlbum) {
 			throw new NotImplementedException();
 		}
+
+		public void CopyFile(string srcPath, string destPath, bool overwrite = false) {
+			throw new NotImplementedException();
+		}
+
+		public string GetRelativePath(string relativeTo, string path) {
+			return Path.GetRelativePath(relativeTo, path);
+		}
+
+		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
+			throw new NotImplementedException();
+		}
 	}
 
 	internal class ErrorTestFailHandler : IErrorHandler {

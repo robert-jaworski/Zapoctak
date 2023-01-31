@@ -1,36 +1,38 @@
 ﻿namespace AlbumLibrary {
 	public interface IImportListProvider {
-		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths,
-			IFileInfoProvider fileInfoProvider, IFileNameProvider fileNameProvider, IErrorHandler errorHandler);
+		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler);
 
-		public ImportList GetImportList(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths,
-			IFileInfoProvider fileInfoProvider, IFileNameProvider fileNameProvider, IErrorHandler errorHandler) {
-			return new ImportList(GetImportItems(fileSystem, importFilePaths, fileInfoProvider, fileNameProvider, errorHandler));
+		public ImportList GetImportList(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler) {
+			return new ImportList(GetImportItems(fileSystem, importFilePaths, errorHandler));
 		}
 
-		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider,
-			IFileInfoProvider fileInfoProvider, IFileNameProvider fileNameProvider, IErrorHandler errorHandler) {
-			return GetImportItems(fileSystem, importFilePathProvider.GetFilePaths(fileSystem, errorHandler), fileInfoProvider,
-				fileNameProvider, errorHandler);
+		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider, IErrorHandler errorHandler) {
+			return GetImportItems(fileSystem, importFilePathProvider.GetFilePaths(fileSystem, errorHandler), errorHandler);
 		}
 
-		public ImportList GetImportList(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider,
-			IFileInfoProvider fileInfoProvider, IFileNameProvider fileNameProvider, IErrorHandler errorHandler) {
-			return new ImportList(GetImportItems(fileSystem, importFilePathProvider, fileInfoProvider, fileNameProvider, errorHandler));
+		public ImportList GetImportList(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider, IErrorHandler errorHandler) {
+			return new ImportList(GetImportItems(fileSystem, importFilePathProvider, errorHandler));
 		}
 	}
 
 	public class ImportListProvider : IImportListProvider {
-		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths,
-			IFileInfoProvider fileInfoProvider, IFileNameProvider fileNameProvider, IErrorHandler errorHandler) {
+		protected IFileInfoProvider FileInfoProvider { get; }
+		protected IFileNameProvider FileNameProvider { get; }
+
+		public ImportListProvider(IFileInfoProvider fileInfoProvider, IFileNameProvider fileNameProvider) {
+			FileInfoProvider = fileInfoProvider;
+			FileNameProvider = fileNameProvider;
+		}
+
+		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler) {
 			foreach (var file in importFilePaths) {
-				var info = fileInfoProvider.GetInfo(file, fileSystem);
+				var info = FileInfoProvider.GetInfo(file, fileSystem);
 				ImportItem? val = null;
 				try {
-					var name = fileNameProvider.GetFileName(info);
-					val = new ImportItem(info.OriginalFilePath, fileSystem.GetFullPathAlbum(name));
+					var name = FileNameProvider.GetFileName(info);
+					val = new ImportItem(info, fileSystem.GetFullPathAlbum(name));
 				} catch (CancelFileCopyException) {
-					val = new ImportItem(info.OriginalFilePath, null);
+					val = new ImportItem(info, null);
 				} catch (InvalidFileNameTemplateException e) {
 					errorHandler.Error(e.Message);
 				}
@@ -42,13 +44,31 @@
 
 	public class ImportItem {
 		public string SourcePath { get; }
-		public string DestinationPath { get; }
-		public bool Cancelled { get; }
+		public string DestinationPath { get; protected set; }
+		public bool Cancelled { get; protected set; }
+		public FileInfo Info { get; }
 
-		public ImportItem(string sourcePath, string? destinationPath) {
-			SourcePath = sourcePath;
+		public ImportItem(FileInfo info, string? destinationPath) {
+			SourcePath = info.OriginalFilePath;
 			DestinationPath = destinationPath ?? "";
 			Cancelled = destinationPath is null;
+			Info = info;
+		}
+
+		public ImportItem ChangeDestination(string destinationPath) {
+			DestinationPath = destinationPath;
+			return this;
+		}
+
+		public ImportItem Cancel() {
+			Cancelled = true;
+			return this;
+		}
+
+		public ImportItem Copy() {
+			return new ImportItem(Info, DestinationPath) {
+				Cancelled = Cancelled
+			};
 		}
 	}
 

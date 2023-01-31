@@ -17,6 +17,7 @@ namespace AlbumLibrary {
 		protected static Dictionary<string, TemplateReplacer> TemplateReplacers { get; } = new Dictionary<string, TemplateReplacer> {
 			{ "year", Year },
 			{ "Y", Year },
+			{ "YY", Year2 },
 			{ "YYYY", Year4 },
 			{ "month", Month },
 			{ "M", Month },
@@ -45,7 +46,7 @@ namespace AlbumLibrary {
 		public TemplateFileNameProvider(string template) {
 			Template = template;
 			// Test template:
-			var fileInfo = new FileInfo("test.jpg", DateTime.Now, DateTime.Now, DateTime.Now, "Aperture Science, Inc.", "Aperture Science Handheld Portal Device");
+			var fileInfo = new FileInfo("portal.jpg", DateTime.Now, DateTime.Now, DateTime.Now, "Aperture Science, Inc.", "Aperture Science Handheld Portal Device");
 			bool addExtension = true;
 			foreach (var m in TemplateElement.Matches(Template).ToList()) {
 				try {
@@ -103,6 +104,10 @@ namespace AlbumLibrary {
 
 		protected static string Year(FileInfo fileInfo, string? options, int? width, ref bool addExtension) {
 			return SetWidth(GetDateTime(fileInfo, options).Year, width);
+		}
+
+		protected static string Year2(FileInfo fileInfo, string? options, int? width, ref bool addExtension) {
+			return SetWidth(GetDateTime(fileInfo, options).Year % 100, width ?? 2);
 		}
 
 		protected static string Year4(FileInfo fileInfo, string? options, int? width, ref bool addExtension) {
