@@ -83,9 +83,10 @@ namespace AlbumLibrary {
 
 		protected static DateTime GetDateTime(FileInfo fileInfo, string? options) {
 			return options switch {
-				"exif" or null => fileInfo.SuitableDateTime,
-				"create" => fileInfo.OverwriteDateTime ?? fileInfo.FileCreation,
-				"modify" => fileInfo.OverwriteDateTime ?? fileInfo.FileModification,
+				null => fileInfo.SuitableDateTime,
+				"exif" => fileInfo.EXIFDateTime ?? throw new CancelFileCopyException(),
+				"create" => fileInfo.FileCreation,
+				"modify" => fileInfo.FileModification,
 				_ => throw new InvalidFileNameTemplateException($"Unknown date time option: {options}"),
 			};
 		}
@@ -157,7 +158,7 @@ namespace AlbumLibrary {
 		protected static string Device(FileInfo fileInfo, string? options, int? width, ref bool addExtension) {
 			return options switch {
 				null or "name" => SetWidth(fileInfo.DeviceName ?? throw new CancelFileCopyException(), width),
-				"manufaturer" => SetWidth(fileInfo.Manufacturer ?? throw new CancelFileCopyException(), width),
+				"manufacturer" => SetWidth(fileInfo.Manufacturer ?? throw new CancelFileCopyException(), width),
 				"model" => SetWidth(fileInfo.Model ?? throw new CancelFileCopyException(), width),
 				_ => throw new InvalidFileNameTemplateException($"Unknown device option: {options}"),
 			};

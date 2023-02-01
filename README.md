@@ -6,14 +6,14 @@ Na ètení EXIF dat byla pouita následující knihovna: https://drewnoakes.com/code
 
 ## Plán
 
-- [ ] Jednoduché importování fotek (seznam fotek, cílovı adresáø)
+- [x] Jednoduché importování fotek (seznam fotek, cílovı adresáø)
 - [ ] Automatické vyhledávání zdroje (šablony foákovıch SD karet)
 - [x] Data z EXIFu
 - [x] Template jména souborù a adresáøového systému
 - [ ] Config soubory
-- [ ] Posunování èasu pøi importu, a také ji importovanıch souborù - ~~pøepsání EXIFu~~ a pøejmenování souboru
+- [x] Posunování èasu pøi importu, ~~a také ji importovanıch souborù~~ - ~~pøepsání EXIFu~~ a pøejmenování souboru
 - [ ] Indexovací soubory
-- [ ] Poèítání hashù - kontrola duplikátù
+- [x] Poèítání hashù - kontrola duplikátù
 - [ ] Mazání - koš
 - [ ] Undo - historie zmìn
 - [ ] Backup

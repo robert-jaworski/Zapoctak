@@ -44,11 +44,11 @@ namespace AlbumTest {
 			return Path.GetFullPath(Path.Combine(Directory, relPath)).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 		}
 
-		public DateTime FileCreation(string fullPath) {
+		public DateTime GetFileCreation(string fullPath) {
 			throw new NotImplementedException();
 		}
 
-		public DateTime FileModification(string fullPath) {
+		public DateTime GetFileModification(string fullPath) {
 			throw new NotImplementedException();
 		}
 
@@ -77,6 +77,10 @@ namespace AlbumTest {
 		}
 
 		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
+			throw new NotImplementedException();
+		}
+
+		public void SetFileCreation(string fullPath, DateTime creationDate) {
 			throw new NotImplementedException();
 		}
 	}

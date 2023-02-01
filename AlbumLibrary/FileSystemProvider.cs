@@ -11,8 +11,10 @@
 		IEnumerable<string> EnumerateFiles(string fullPath);
 		IEnumerable<string> EnumerateDirectories(string fullPath);
 
-		DateTime FileCreation(string fullPath);
-		DateTime FileModification(string fullPath);
+		DateTime GetFileCreation(string fullPath);
+		DateTime GetFileModification(string fullPath);
+
+		void SetFileCreation(string fullPath, DateTime creationDate);
 
 		Stream OpenFile(string fullPath);
 		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath);
@@ -48,11 +50,11 @@
 			return Path.GetFullPath(relPath);
 		}
 
-		public DateTime FileCreation(string fullPath) {
+		public DateTime GetFileCreation(string fullPath) {
 			return File.GetCreationTime(fullPath);
 		}
 
-		public DateTime FileModification(string fullPath) {
+		public DateTime GetFileModification(string fullPath) {
 			return File.GetLastWriteTime(fullPath);
 		}
 
@@ -81,8 +83,14 @@
 		}
 
 		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
-			Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+			var dir = Path.GetDirectoryName(destPath);
+			if (dir is not null)
+				Directory.CreateDirectory(dir);
 			CopyFile(srcPath, destPath, overwrite);
+		}
+
+		public void SetFileCreation(string fullPath, DateTime creationDate) {
+			File.SetCreationTime(fullPath, creationDate);
 		}
 	}
 }

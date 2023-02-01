@@ -8,14 +8,22 @@ namespace AlbumLibrary {
 	}
 
 	public class RenameDuplicateResolver : IDuplicateResolver {
+		protected string Suffixes { get; }
+		protected string FallbackSuffix { get; }
+
+		public RenameDuplicateResolver(string suffixes = "abcdefghijklmnopqrstuvwxyz", string fallbackSuffix = "z") {
+			Suffixes = suffixes;
+			FallbackSuffix = fallbackSuffix;
+		}
+
 		public ImportItem ResolveDuplicate(ImportItem item, IFileSystemProvider fileSystem) {
-			foreach (var letter in "abcdefghijklmnopqrstuvwxyz") {
+			foreach (var letter in Suffixes) {
 				var newPath = AddSuffix(item.DestinationPath, letter.ToString());
 				if (!fileSystem.FileExists(newPath)) {
 					return item.ChangeDestination(newPath);
 				}
 			}
-			return ResolveDuplicate(item.ChangeDestination(AddSuffix(item.DestinationPath, "z")), fileSystem);
+			return ResolveDuplicate(item.ChangeDestination(AddSuffix(item.DestinationPath, FallbackSuffix)), fileSystem);
 		}
 
 		public static string AddSuffix(string path, string suffix) {
@@ -23,10 +31,10 @@ namespace AlbumLibrary {
 		}
 
 		public IEnumerable<ImportItem> GetAlternatives(ImportItem item, IFileSystemProvider fileSystem) {
-			foreach (var letter in "abcdefghijklmnopqrstuvwxyz") {
+			foreach (var letter in Suffixes) {
 				yield return item.Copy().ChangeDestination(AddSuffix(item.DestinationPath, letter.ToString()));
 			}
-			foreach (var i in GetAlternatives(item.ChangeDestination(AddSuffix(item.DestinationPath, "z")), fileSystem)) {
+			foreach (var i in GetAlternatives(item.ChangeDestination(AddSuffix(item.DestinationPath, FallbackSuffix)), fileSystem)) {
 				yield return i;
 			}
 		}

@@ -24,7 +24,7 @@ namespace AlbumLibrary {
 		public string? DeviceName { get; }
 
 		public FileInfo(string path, DateTime? exifDateTime, DateTime fileCreation, DateTime fileModification, string? manufacturer, string? model) {
-			OriginalFileName = Path.GetFileName(path);
+			OriginalFileName = Path.GetFileNameWithoutExtension(path);
 			OriginalFileExtension = Path.GetExtension(path);
 			OriginalFilePath = path;
 			EXIFDateTime = exifDateTime;
@@ -38,8 +38,8 @@ namespace AlbumLibrary {
 
 	public class NormalFileInfoProvider : IFileInfoProvider {
 		public FileInfo GetInfo(string fullPath, IFileSystemProvider fileSystem) {
-			var fileCreation = fileSystem.FileCreation(fullPath);
-			var fileModification = fileSystem.FileModification(fullPath);
+			var fileCreation = fileSystem.GetFileCreation(fullPath);
+			var fileModification = fileSystem.GetFileModification(fullPath);
 
 			// This code uses the following library: https://drewnoakes.com/code/exif/
 
