@@ -44,10 +44,23 @@ namespace AlbumConsole {
 				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
 				new ArgumentDefinition("template", 't', CLIArgumentType.String, new StringArgument(@"{YYYY}/{MM}/{YY}{MM}{DD}-{hh}{mm}{ss}"), false),
 				new ArgumentDefinition("time-shift", 's', CLIArgumentType.String, new StringArgument(@""), false),
+				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(@""), false),
+				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(@""), false),
 				new ArgumentDefinition("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
-			}, DefaultCommandsActions.Import) }
+			}, DefaultCommandsActions.Import) },
+			{ "export", new Command("export", "Exports specified files from the album to the specified directory.",
+				new List<ArgumentDefinition> {
+				new ArgumentDefinition("export-to", 'e', CLIArgumentType.String, null, true),
+				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
+				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgumentDefinition("template", 't', CLIArgumentType.String, new StringArgument(@"{file:name}"), false),
+				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(@""), false),
+				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(@""), false),
+				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+			}, DefaultCommandsActions.Export) },
 		};
 
 		public string Name { get; }
@@ -342,41 +355,79 @@ namespace AlbumConsole {
 			return new CommandResult(true, msg);
 		}
 
-		public static CommandResult Import(CommandArguments args) {
+		public static CommandResult? GetNormalFilters(CommandArguments args, out List<IFileFilter> fileFilters) {
+			fileFilters = new();
+
+			bool doDate = false, doShift = false;
+
+			if (args.HasArgument<StringArgument>("after-date")) {
+				var afterDate = args.GetArgument<StringArgument>("after-date").Value;
+				if (!string.IsNullOrEmpty(afterDate)) {
+					if (DateTime.TryParse(afterDate, out DateTime date))
+						fileFilters.Add(new AfterDateFilter(date));
+					else
+						return new CommandResult(false, $"Failed to parse after date: {afterDate}");
+					doDate = true;
+				}
+			}
+			if (args.HasArgument<StringArgument>("before-date")) {
+				var beforeDate = args.GetArgument<StringArgument>("before-date").Value;
+				if (!string.IsNullOrEmpty(beforeDate)) {
+					if (DateTime.TryParse(beforeDate, out DateTime date))
+						fileFilters.Add(new BeforeDateFilter(date));
+					else
+						return new CommandResult(false, $"Failed to parse before date: {beforeDate}");
+					doDate = true;
+				}
+			}
+			if (args.HasArgument<StringArgument>("time-shift")) {
+				var timeShift = args.GetArgument<StringArgument>("time-shift").Value;
+				if (!string.IsNullOrEmpty(timeShift)) {
+					if (TimeSpan.TryParse(timeShift, out TimeSpan time))
+						fileFilters.Add(new TimeShiftFilter(time));
+					else
+						return new CommandResult(false, $"Failed to parse time shift: {timeShift}");
+					doShift = true;
+				}
+			}
+
+			if (doShift && doDate) {
+				Console.WriteLine("Please note that --time-shift gets applied after --after-date and --before-date");
+			}
+
+			return null;
+		}
+
+		public static CommandResult? GetImportFilePathProvider(CommandArguments args, out IImportFilePathProvider importFilePathProvider) {
+			IErrorHandler errHandler = new ErrorListHandler();
+			importFilePathProvider = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files, GetExtensions(args), errHandler);
+			if (errHandler.IsError) {
+				return new CommandResult(false, errHandler.GetUnprocessed().ToList());
+			}
+			return null;
+		}
+
+		public static CommandResult? GetImportItems(CommandArguments args, IImportFilePathProvider importFilePathProvider,
+			List<IFileFilter> fileFilters, IFileSystemProvider fileSystem, out IEnumerable<ImportItem> importItems) {
 			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
 
 			IFileNameProvider fileNameProvider;
 			try {
 				fileNameProvider = TemplateFileNameProvider.MultipleTemplates(args.GetArgument<StringArgument>("template").Value.Split(','));
 			} catch (InvalidFileNameTemplateException e) {
+				importItems = new List<ImportItem>();
 				return new CommandResult(false, new List<string> { "Invalid file name template!", e.Message });
 			}
 
-			IImportListProvider importListProvider;
-			var timeShift = args.GetArgument<StringArgument>("time-shift").Value;
-			if (!string.IsNullOrEmpty(timeShift)) {
-				if (TimeSpan.TryParse(timeShift, out TimeSpan time)) {
-					importListProvider = new FilteredImportListProvider(new List<IFileFilter> { new TimeShiftFilter(time) },
-						new NormalFileInfoProvider(), fileNameProvider);
-				} else
-					return new CommandResult(false, $"Failed to parse time shift: {timeShift}");
-			} else
-				importListProvider = new ImportListProvider(new NormalFileInfoProvider(), fileNameProvider);
+			IImportListProvider importListProvider = new ImportListProvider(new NormalFileInfoProvider(), fileNameProvider);
+			if (fileFilters.Count > 0) {
+				importListProvider = new FilteredImportListProvider(fileFilters, new NormalFileInfoProvider(), fileNameProvider);
+			}
 
 			IErrorHandler errHandler = new ErrorListHandler();
-			var files = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files, GetExtensions(args), errHandler);
-			if (errHandler.IsError)
-				return new CommandResult(false, errHandler.GetUnprocessed().ToList());
-
-			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("album-dir").Value);
-			errHandler = new ErrorLogHandler();
-
-			IEnumerable<ImportItem> items;
 
 			if (RequiresConfirmation(args) || !Confirm(args, "You should never see this message.")) {
-				if (!verbose)
-					errHandler = new ErrorListHandler();
-				var importList = importListProvider.GetImportList(fileSystem, files, errHandler);
+				var importList = importListProvider.GetImportList(fileSystem, importFilePathProvider, errHandler);
 				if (verbose) {
 					Console.WriteLine("Summary:");
 					foreach (var item in importList.AllItems) {
@@ -390,39 +441,89 @@ namespace AlbumConsole {
 				Console.WriteLine($"Targeted {importList.AllItems.Count} files. Will import {importList.ImportItems.Count} files," +
 					$" {importList.CancelledItems.Count} files have been cancelled.\n");
 				if (Confirm(args, "Do you wish to proceed?")) {
-					items = importList.ImportItems;
+					importItems = importList.ImportItems;
 				} else {
+					importItems = new List<ImportItem>();
 					return new CommandResult(true, "Cancelled by user");
 				}
-				if (!verbose)
-					errHandler = new ErrorLogHandler();
 			} else {
-				items = importListProvider.GetImportItems(fileSystem, files, errHandler);
+				importItems = importListProvider.GetImportItems(fileSystem, importFilePathProvider, errHandler);
 			}
 
-			//if (errHandler.IsError)
-			//	return new CommandResult(false, errHandler.GetUnprocessed().ToList());
+			return null;
+		}
 
-			IDuplicateResolver duplicateResolver = new RenameDuplicateResolver();
-			if (args.GetArgument<FlagArgument>("hash-duplicates").IsSet)
+		public static CommandResult? GetDuplicateResolver(CommandArguments args, out IDuplicateResolver duplicateResolver) {
+			duplicateResolver = new SuffixDuplicateResolver();
+			if (args.HasArgument<FlagArgument>("hash-duplicates") && args.GetArgument<FlagArgument>("hash-duplicates").IsSet)
 				duplicateResolver = new HashDuplicateResolver(duplicateResolver);
+			return null;
+		}
 
+		public static CommandResult Import(CommandArguments args) {
+			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
+
+			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
+			if (res is not null)
+				return res;
+
+			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("album-dir").Value);
+
+			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider);
+			if (res is not null)
+				return res;
+
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items);
+			if (res is not null)
+				return res;
+
+			res = GetDuplicateResolver(args, out IDuplicateResolver duplicateResolver);
+			if (res is not null)
+				return res;
+
+			IErrorHandler errHandler = new ErrorLogHandler();
 			IFileImporter importer = new FileImporter(fileSystem, duplicateResolver);
 			var imported = importer.ImportItems(items, errHandler, new ConsoleLogger(verbose)).ToList();
 
 			Console.WriteLine($"{imported.Count} files successfully imported.");
-
-			//var count = 0;
-			//foreach (var item in items) {
-			//	if (!item.Cancelled) {
-			//		Console.Write($"Importing {item.SourcePath} -> {item.DestinationPath}");
-			//		// TODO
-			//		Console.WriteLine(" (not implemented)");
-			//		count++;
-			//	}
-			//}
-
 			Console.WriteLine();
+
+			return new CommandResult(true, errHandler.GetAll().ToList());
+		}
+
+		public static CommandResult Export(CommandArguments args) {
+			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
+
+			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
+			if (res is not null)
+				return res;
+
+			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("export-to").Value);
+
+			IImportFilePathProvider importFilePathProvider;
+			if (args.GetArgument<FilesArgument>("files").Files.Count != 0) {
+				res = GetImportFilePathProvider(args, out importFilePathProvider);
+				if (res is not null)
+					return res;
+			} else {
+				importFilePathProvider = new ImportFilePathProvider(new List<IFilePathProvider> {
+					new DirectoryFilePathProvider(fileSystem.GetFullPath(args.GetArgument<StringArgument>("album-dir").Value), true)
+				}, GetExtensions(args));
+			}
+
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items);
+			if (res is not null)
+				return res;
+
+			IDuplicateResolver duplicateResolver = new SkipDuplicateResolver();
+
+			IErrorHandler errHandler = new ErrorLogHandler();
+			IFileImporter importer = new FileImporter(fileSystem, duplicateResolver);
+			var imported = importer.ImportItems(items, errHandler, new ConsoleLogger(verbose)).ToList();
+
+			Console.WriteLine($"{imported.Count} files successfully imported.");
+			Console.WriteLine();
+
 			return new CommandResult(true, errHandler.GetAll().ToList());
 		}
 	}

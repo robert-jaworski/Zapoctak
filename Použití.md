@@ -29,7 +29,7 @@ Parametry jsou ètyø typù:
         - Template mùže obsahovat placeholdery které se specifikují `{type:options#width}`, kde `options` a `width` jsou nepovinné. `width` specifikuje požadovanou minimální šíøku položky. `options` blíže specifikuje, co bude výsledkem nahrazení placeholderu.
         - Dostupné hodnoty typù jsou: `year`/`Y`, `YYYY`, `month`/`M`, `MM`, `day`/`D`, `DD`, `hour`/`h`, `hh`, `minute`/`m`, `mm`, `second`/`s`, `ss`, `device:name`, `device:manufacturer`, `device:model`, `noextension`/`noext`, `extension`/`ext`/`.`, `file`/`file:name`, `file:extension`/`file:ext`
         - Pokud nìkterá hodnota není dostupná (napø. `device:model`), template se nepoužije
-        - Placeholdery data a èasu mùžou mít `options` následující: `exif` (defaultní), `create`, `modify`
+        - Placeholdery data a èasu mùžou mít `options` následující: `exif` (defaultní), `create`, `modify`. Pokud není `options` nastaveno, použije se buï `exif` nebo `create`, podle toho, co existuje
         - Placeholdery `extension` a `noextension` umožòují filtrovat podle koncovek souborù, napø. `{YYYY}/{MM}/{YYYY}{MM}{DD}-{hh}{mm}{ss}{ext:.jpg},other/{YYYY}{MM}{DD}-{hh}{mm}{ss}`. Rozdíl je v tom, že `extension` se nahradí specifikovanou koncovkou souboru (pøesnì jak je v templatu), ale `noextension` zùstane prázdný. Samotný `{ext}` se nahradí koncovkou pùvodního souboru.
         - Pokud není specifikovaný `extension` nebo `noextension` na konec názvu se pøidá koncovka pùvodního souboru
 

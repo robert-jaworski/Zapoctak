@@ -16,7 +16,8 @@ namespace AlbumLibrary {
 		public DateTime FileModification { get; }
 		public DateTime? OverwriteDateTime { get; set; }
 
-		public DateTime SuitableDateTime => OverwriteDateTime ?? EXIFDateTime ?? FileCreation;
+		public DateTime EXIFOrCreationDateTime => EXIFDateTime ?? FileCreation;
+		public DateTime SuitableDateTime => OverwriteDateTime ?? EXIFOrCreationDateTime;
 
 		public string? Manufacturer { get; }
 		public string? Model { get; }
@@ -34,6 +35,9 @@ namespace AlbumLibrary {
 			Model = model;
 			DeviceName = manufacturer is null && model is null ? null : (manufacturer is null ? "" : manufacturer + " ") + (model ?? "");
 		}
+
+		public FileInfo(string path, DateTime fileCreation, DateTime? exifDateTime = null, string? manufacturer = null, string? model = null) :
+			this(path, exifDateTime, fileCreation, fileCreation, manufacturer, model) { }
 	}
 
 	public class NormalFileInfoProvider : IFileInfoProvider {

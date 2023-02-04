@@ -18,7 +18,7 @@ namespace AlbumTest {
 			Logger.LogMessage($"Testing {id}: {path} -> {expected}");
 
 			var item = new ImportItem(new AlbumLibrary.FileInfo(@"C:\test.jpg", null, DateTime.Now, DateTime.Now, null, null), path);
-			var duplicateResolver = new RenameDuplicateResolver();
+			var duplicateResolver = new SuffixDuplicateResolver();
 
 			Assert.AreEqual(expected, duplicateResolver.ResolveDuplicate(item, new TestFileSystemProvider(@"C:\testDir", files)).DestinationPath);
 		}
@@ -37,7 +37,7 @@ namespace AlbumTest {
 			Logger.LogMessage($"Testing {id}: {path}");
 
 			var item = new ImportItem(new AlbumLibrary.FileInfo(@"C:\test.jpg", null, DateTime.Now, DateTime.Now, null, null), path);
-			var duplicateResolver = new RenameDuplicateResolver();
+			var duplicateResolver = new SuffixDuplicateResolver();
 
 			var provided = duplicateResolver.GetAlternatives(item, new TestFileSystemProvider(@"C:\testDir",
 				alternatives.Concat(new string[] { path }))).Take(alternatives.Length + 1);

@@ -1,25 +1,39 @@
 ﻿using AlbumLibrary;
+using MetadataExtractor.Formats.Exif;
+using MetadataExtractor;
+using FileInfo = AlbumLibrary.FileInfo;
 
 namespace AlbumTest {
 	internal class TestFileSystemProvider : IFileSystemProvider {
-		protected List<string> Files { get; }
+		protected List<FileInfo> Files { get; }
 		protected string Directory { get; }
+		protected string AlbumDirectory { get; }
+		protected bool EmulateCopy { get; set; }
 
-		public TestFileSystemProvider(string dir, IEnumerable<string> files) {
+		public TestFileSystemProvider(string dir, string albumDir, IEnumerable<FileInfo> files, bool emulateCopy = false) {
 			Directory = dir;
-			Files = new List<string>(from f in files select GetFullPath(f));
+			Files = files.ToList();
+			EmulateCopy = emulateCopy;
+			AlbumDirectory = albumDir;
+		}
+
+		public TestFileSystemProvider(string dir, IEnumerable<string> files, bool emulateCopy = false) {
+			Directory = dir;
+			Files = new List<FileInfo>(from f in files select new FileInfo(GetFullPath(f), null, DateTime.Now, DateTime.Now, null, null));
+			EmulateCopy = emulateCopy;
+			AlbumDirectory = dir;
 		}
 
 		public bool DirectoryExists(string fullPath) {
-			return Files.Any(f => f.StartsWith(Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar));
+			return Files.Any(f => f.OriginalFilePath.StartsWith(Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar));
 		}
 
 		protected IEnumerable<string> GetFilesWithPrefix(ref string fullPath) {
 			fullPath = Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar;
 			var p = fullPath;
 			return from f in Files
-				   where f.StartsWith(p)
-				   select f;
+				   where f.OriginalFilePath.StartsWith(p)
+				   select f.OriginalFilePath;
 		}
 
 		public IEnumerable<string> EnumerateFiles(string fullPath) {
@@ -37,19 +51,25 @@ namespace AlbumTest {
 		}
 
 		public bool FileExists(string fullPath) {
-			return Files.Any(f => f == fullPath);
+			return Files.Any(f => f.OriginalFilePath == fullPath);
 		}
 
 		public string GetFullPath(string relPath) {
 			return Path.GetFullPath(Path.Combine(Directory, relPath)).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 		}
 
+		public IEnumerable<FileInfo> GetFileInfos(string fullPath) {
+			return from f in Files
+				   where f.OriginalFilePath == fullPath
+				   select f;
+		}
+
 		public DateTime GetFileCreation(string fullPath) {
-			throw new NotImplementedException();
+			return GetFileInfos(fullPath).First().FileCreation;
 		}
 
 		public DateTime GetFileModification(string fullPath) {
-			throw new NotImplementedException();
+			return GetFileInfos(fullPath).First().FileModification;
 		}
 
 		public Stream OpenFile(string fullPath) {
@@ -61,15 +81,16 @@ namespace AlbumTest {
 		}
 
 		public string GetAlbumDirectory() {
-			throw new NotImplementedException();
+			return AlbumDirectory;
 		}
 
 		public string GetFullPathAlbum(string pathInAlbum) {
-			throw new NotImplementedException();
+			return Path.GetFullPath(Path.Combine(AlbumDirectory, pathInAlbum)).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 		}
 
 		public void CopyFile(string srcPath, string destPath, bool overwrite = false) {
-			throw new NotImplementedException();
+			if (!EmulateCopy)
+				throw new NotImplementedException();
 		}
 
 		public string GetRelativePath(string relativeTo, string path) {
@@ -77,11 +98,13 @@ namespace AlbumTest {
 		}
 
 		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
-			throw new NotImplementedException();
+			if (!EmulateCopy)
+				throw new NotImplementedException();
 		}
 
 		public void SetFileCreation(string fullPath, DateTime creationDate) {
-			throw new NotImplementedException();
+			if (!EmulateCopy)
+				throw new NotImplementedException();
 		}
 	}
 
@@ -99,6 +122,14 @@ namespace AlbumTest {
 
 		public IEnumerable<string> GetAll() {
 			return Array.Empty<string>();
+		}
+	}
+
+	internal class TestFileInfoProvider : IFileInfoProvider {
+		public FileInfo GetInfo(string fullPath, IFileSystemProvider fileSystem) {
+			if (fileSystem is not TestFileSystemProvider)
+				throw new NotImplementedException();
+			return ((TestFileSystemProvider)fileSystem).GetFileInfos(fullPath).First();
 		}
 	}
 }

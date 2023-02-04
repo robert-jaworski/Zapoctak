@@ -7,11 +7,21 @@ namespace AlbumLibrary {
 		public IEnumerable<ImportItem> GetAlternatives(ImportItem item, IFileSystemProvider fileSystem);
 	}
 
-	public class RenameDuplicateResolver : IDuplicateResolver {
+	public class SkipDuplicateResolver : IDuplicateResolver {
+		public IEnumerable<ImportItem> GetAlternatives(ImportItem item, IFileSystemProvider fileSystem) {
+			yield break;
+		}
+
+		public ImportItem ResolveDuplicate(ImportItem item, IFileSystemProvider fileSystem) {
+			return item.Cancel();
+		}
+	}
+
+	public class SuffixDuplicateResolver : IDuplicateResolver {
 		protected string Suffixes { get; }
 		protected string FallbackSuffix { get; }
 
-		public RenameDuplicateResolver(string suffixes = "abcdefghijklmnopqrstuvwxyz", string fallbackSuffix = "z") {
+		public SuffixDuplicateResolver(string suffixes = "abcdefghijklmnopqrstuvwxyz", string fallbackSuffix = "z") {
 			Suffixes = suffixes;
 			FallbackSuffix = fallbackSuffix;
 		}
@@ -59,7 +69,7 @@ namespace AlbumLibrary {
 			}
 
 			if (srcHash.Zip(destHash).All(x => x.First == x.Second))
-				return item.Cancel();
+				return item.MarkDuplicate();
 
 			foreach (var i in FallbackResolver.GetAlternatives(item, fileSystem)) {
 				if (!fileSystem.FileExists(i.DestinationPath))
@@ -70,7 +80,7 @@ namespace AlbumLibrary {
 				}
 
 				if (srcHash.Zip(destHash).All(x => x.First == x.Second))
-					return i.Cancel();
+					return i.MarkDuplicate();
 			}
 
 			return item.Cancel();

@@ -23,13 +23,17 @@
 						if (importedItem.DestinationPath != item.DestinationPath)
 							logger.Write($"\t=> {logger.GetSuitablePath(importedItem.DestinationPath, FileSystem)}");
 						if (importedItem.Cancelled) {
-							logger.WriteLine("\t:  Cancelled (duplicate)");
+							if (importedItem.IsDuplicate)
+								logger.WriteLine("\t:  Cancelled (duplicate)");
+							else
+								logger.WriteLine("\t:  Cancelled");
 							continue;
 						}
 					}
 
 					try {
 						FileSystem.CopyFileCreatingDirectories(importedItem.SourcePath, importedItem.DestinationPath);
+						FileSystem.SetFileCreation(importedItem.DestinationPath, importedItem.Info.SuitableDateTime);
 						logger.WriteLine("\t:  Success");
 						imported.Add(importedItem);
 					} catch (Exception e) {

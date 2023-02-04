@@ -11,8 +11,32 @@
 		}
 
 		public FileInfo? Filter(FileInfo file) {
-			file.OverwriteDateTime = (file.EXIFDateTime ?? file.FileCreation).Add(Shift);
+			file.OverwriteDateTime = file.EXIFOrCreationDateTime.Add(Shift);
 			return file;
+		}
+	}
+
+	public class BeforeDateFilter : IFileFilter {
+		public DateTime Date { get; }
+
+		public BeforeDateFilter(DateTime dateTime) {
+			Date = dateTime;
+		}
+
+		public FileInfo? Filter(FileInfo file) {
+			return file.EXIFOrCreationDateTime <= Date ? file : null;
+		}
+	}
+
+	public class AfterDateFilter : IFileFilter {
+		public DateTime Date { get; }
+
+		public AfterDateFilter(DateTime dateTime) {
+			Date = dateTime;
+		}
+
+		public FileInfo? Filter(FileInfo file) {
+			return file.EXIFOrCreationDateTime >= Date ? file : null;
 		}
 	}
 
