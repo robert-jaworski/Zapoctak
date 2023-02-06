@@ -1,4 +1,6 @@
-﻿namespace AlbumLibrary {
+﻿using Sharpen;
+
+namespace AlbumLibrary {
 	public interface IFileFilter {
 		FileInfo? Filter(FileInfo file);
 	}
@@ -11,7 +13,7 @@
 		}
 
 		public FileInfo? Filter(FileInfo file) {
-			file.OverwriteDateTime = file.EXIFOrCreationDateTime.Add(Shift);
+			file.TimeShift = Shift;
 			return file;
 		}
 	}
@@ -24,7 +26,7 @@
 		}
 
 		public FileInfo? Filter(FileInfo file) {
-			return file.EXIFOrCreationDateTime <= Date ? file : null;
+			return file.TrueEXIFOrCreationDateTime <= Date ? file : null;
 		}
 	}
 
@@ -36,7 +38,36 @@
 		}
 
 		public FileInfo? Filter(FileInfo file) {
-			return file.EXIFOrCreationDateTime >= Date ? file : null;
+			return file.TrueEXIFOrCreationDateTime >= Date ? file : null;
+		}
+	}
+
+	public class TemplateFilter : IFileFilter {
+		public IFileNameProvider FileNameProvider { get; }
+
+		public TemplateFilter(string template) {
+			FileNameProvider = TemplateFileNameProvider.MultipleTemplates(template.Split(','));
+		}
+
+		public FileInfo? Filter(FileInfo file) {
+			try {
+				var result = FileNameProvider.GetFileName(file, false).Split('=');
+				return result.Skip(1).All(x => x == result[0]) ? file : null;
+			} catch (CancelFileCopyException) {
+				return null;
+			}
+		}
+	}
+
+	public class FirstFilter : IFileFilter {
+		protected List<IFileFilter> FileFilters { get; }
+
+		public FirstFilter(IEnumerable<IFileFilter> fileFilters) {
+			FileFilters = fileFilters.ToList();
+		}
+
+		public FileInfo? Filter(FileInfo file) {
+			return FileFilters.Select(x => x.Filter(file)).Where(x => x is not null).FirstOrDefault();
 		}
 	}
 

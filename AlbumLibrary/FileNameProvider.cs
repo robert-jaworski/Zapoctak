@@ -1,8 +1,9 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace AlbumLibrary {
 	public interface IFileNameProvider {
-		public string GetFileName(FileInfo fileInfo);
+		public string GetFileName(FileInfo fileInfo, bool addExtension = true);
 	}
 
 	public class CancelFileCopyException : Exception { }
@@ -40,13 +41,16 @@ namespace AlbumLibrary {
 			{ "extension", Extension },
 			{ "ext", Extension },
 			{ ".", Extension },
-			{ "file", File }
+			{ "file", File },
+			{ "unicode", Unicode },
+			{ "u", Unicode },
+			{ "x", Unicode },
 		};
 
 		public TemplateFileNameProvider(string template) {
 			Template = template;
 			// Test template:
-			var fileInfo = new FileInfo("portal.jpg", DateTime.Now, DateTime.Now, DateTime.Now, "Aperture Science, Inc.", "Aperture Science Handheld Portal Device");
+			var fileInfo = new FileInfo("test/portal.jpg", DateTime.Now, DateTime.Now, DateTime.Now, "Aperture Science, Inc.", "Aperture Science Handheld Portal Device", "portal.jpg");
 			bool addExtension = true;
 			foreach (var m in TemplateElement.Matches(Template).ToList()) {
 				try {
@@ -70,8 +74,7 @@ namespace AlbumLibrary {
 			return new MultipleFileNameProvider(from t in templates select new TemplateFileNameProvider(t));
 		}
 
-		public string GetFileName(FileInfo fileInfo) {
-			var addExtension = true;
+		public string GetFileName(FileInfo fileInfo, bool addExtension = true) {
 			var name = TemplateElement.Replace(Template, m => TemplateReplacers[m.Groups[1].Value](fileInfo,
 					m.Groups[2].Success ? m.Groups[2].Value : null,
 					m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : null, ref addExtension)
@@ -158,7 +161,7 @@ namespace AlbumLibrary {
 		protected static string Device(FileInfo fileInfo, string? options, int? width, ref bool addExtension) {
 			return options switch {
 				null or "name" => SetWidth(fileInfo.DeviceName ?? throw new CancelFileCopyException(), width),
-				"manufacturer" => SetWidth(fileInfo.Manufacturer ?? throw new CancelFileCopyException(), width),
+				"make" or "manufacturer" => SetWidth(fileInfo.Manufacturer ?? throw new CancelFileCopyException(), width),
 				"model" => SetWidth(fileInfo.Model ?? throw new CancelFileCopyException(), width),
 				_ => throw new InvalidFileNameTemplateException($"Unknown device option: {options}"),
 			};
@@ -200,8 +203,19 @@ namespace AlbumLibrary {
 			return options switch {
 				null or "name" => SetWidth(fileInfo.OriginalFileName, width),
 				"extension" or "ext" => SetWidth(fileInfo.OriginalFileExtension[1..], width),
+				"relativePath" or "relPath" or "rel" => SetWidth(fileInfo.OriginalFileRelativePath ?? throw new CancelFileCopyException(), width),
 				_ => throw new InvalidFileNameTemplateException($"Unknown file options: {options}")
 			};
+		}
+
+		protected static string Unicode(FileInfo fileInfo, string? options, int? width, ref bool addExtension) {
+			if (width is not null)
+				throw new InvalidFileNameTemplateException($"Cannot specify width of a unicode character");
+			if (options is null)
+				throw new InvalidFileNameTemplateException($"Unicode character code must be specified");
+			if (!int.TryParse(options, NumberStyles.HexNumber, null, out int code))
+				throw new InvalidFileNameTemplateException($"Unicode character code must be a hexadecimal number");
+			return char.ConvertFromUtf32(code);
 		}
 	}
 
@@ -216,10 +230,10 @@ namespace AlbumLibrary {
 			FileNameProviders = fileNameProviders.ToList();
 		}
 
-		public string GetFileName(FileInfo fileInfo) {
+		public string GetFileName(FileInfo fileInfo, bool addExtension = true) {
 			foreach (var provider in FileNameProviders) {
 				try {
-					return provider.GetFileName(fileInfo);
+					return provider.GetFileName(fileInfo, addExtension);
 				} catch (CancelFileCopyException) { }
 			}
 			throw new CancelFileCopyException();

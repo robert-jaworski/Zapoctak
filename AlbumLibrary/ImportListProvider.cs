@@ -47,6 +47,7 @@
 		public string DestinationPath { get; protected set; }
 		public bool Cancelled { get; protected set; }
 		public bool IsDuplicate { get; protected set; }
+		public bool Overwrite { get; protected set; }
 		public FileInfo Info { get; }
 
 		public ImportItem(FileInfo info, string? destinationPath) {
@@ -69,6 +70,11 @@
 		public ImportItem MarkDuplicate() {
 			IsDuplicate = true;
 			return Cancel();
+		}
+
+		public ImportItem MakeOverwrite() {
+			Overwrite = true;
+			return this;
 		}
 
 		public ImportItem Copy() {

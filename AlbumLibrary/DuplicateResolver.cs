@@ -2,12 +2,16 @@
 
 namespace AlbumLibrary {
 	public interface IDuplicateResolver {
+		public bool ChecksFileContents { get; }
+
 		public ImportItem ResolveDuplicate(ImportItem item, IFileSystemProvider fileSystem);
 
 		public IEnumerable<ImportItem> GetAlternatives(ImportItem item, IFileSystemProvider fileSystem);
 	}
 
 	public class SkipDuplicateResolver : IDuplicateResolver {
+		public bool ChecksFileContents => false;
+
 		public IEnumerable<ImportItem> GetAlternatives(ImportItem item, IFileSystemProvider fileSystem) {
 			yield break;
 		}
@@ -17,9 +21,52 @@ namespace AlbumLibrary {
 		}
 	}
 
+	public class OverwriteDuplicateResolver : IDuplicateResolver {
+		public bool CheckModificationDate { get; }
+		public bool HashFiles { get; }
+
+		public bool ChecksFileContents => HashFiles;
+
+		public OverwriteDuplicateResolver(bool checkModificationDate, bool hashFiles) {
+			CheckModificationDate = checkModificationDate;
+			HashFiles = hashFiles;
+		}
+
+		public IEnumerable<ImportItem> GetAlternatives(ImportItem item, IFileSystemProvider fileSystem) {
+			yield break;
+		}
+
+		public ImportItem ResolveDuplicate(ImportItem item, IFileSystemProvider fileSystem) {
+			if (CheckModificationDate) {
+				if (item.Info.FileModification > fileSystem.GetFileModification(item.DestinationPath))
+					return item.MakeOverwrite();
+			}
+			if (HashFiles) {
+				using var md5 = MD5.Create();
+
+				byte[] srcHash, destHash;
+				using (var file = fileSystem.OpenFile(item.SourcePath)) {
+					srcHash = md5.ComputeHash(file);
+				}
+				using (var file = fileSystem.OpenFile(item.DestinationPath)) {
+					destHash = md5.ComputeHash(file);
+				}
+
+				if (srcHash.Zip(destHash).All(x => x.First == x.Second))
+					return item.MarkDuplicate();
+				return item.MakeOverwrite();
+			}
+			if (!CheckModificationDate)
+				return item.MakeOverwrite();
+			return item.Cancel();
+		}
+	}
+
 	public class SuffixDuplicateResolver : IDuplicateResolver {
 		protected string Suffixes { get; }
 		protected string FallbackSuffix { get; }
+
+		public bool ChecksFileContents => false;
 
 		public SuffixDuplicateResolver(string suffixes = "abcdefghijklmnopqrstuvwxyz", string fallbackSuffix = "z") {
 			Suffixes = suffixes;
@@ -52,6 +99,8 @@ namespace AlbumLibrary {
 
 	public class HashDuplicateResolver : IDuplicateResolver {
 		public IDuplicateResolver FallbackResolver { get; }
+
+		public bool ChecksFileContents => true;
 
 		public HashDuplicateResolver(IDuplicateResolver fallbackResolver) {
 			FallbackResolver = fallbackResolver;

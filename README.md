@@ -11,12 +11,12 @@ Na ètení EXIF dat byla použita následující knihovna: https://drewnoakes.com/code
 - [x] Data z EXIFu
 - [x] Template jména souborù a adresáøového systému
 - [ ] Config soubory
-- [x] Posunování èasu pøi importu, ~~a také již importovaných souborù~~ - ~~pøepsání EXIFu~~ a pøejmenování souboru
+- [x] Posunování èasu pøi importu, a také již importovaných souborù - ~~pøepsání EXIFu~~ a pøejmenování souboru
 - [ ] Indexovací soubory
 - [x] Poèítání hashù - kontrola duplikátù
 - [ ] Mazání - koš
 - [ ] Undo - historie zmìn
-- [ ] Backup
+- [x] Backup
 - [ ] Select, export - vybírání fotek splòující urèíté vlastnosti a jejich export, popø. jiné operace na nich
 - [ ] Interaktivní mód
 

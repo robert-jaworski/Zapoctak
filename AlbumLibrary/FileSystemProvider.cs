@@ -15,12 +15,18 @@
 		DateTime GetFileModification(string fullPath);
 
 		void SetFileCreation(string fullPath, DateTime creationDate);
+		void SetFileModification(string fullPath, DateTime modificationDate);
 
 		Stream OpenFile(string fullPath);
 		public IReadOnlyList<MetadataExtractor.Directory> GetFileInfo(string fullPath);
 
 		public void CopyFile(string srcPath, string destPath, bool overwrite = false);
 		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false);
+
+		public void MoveFile(string srcPath, string destPath, bool overwrite = false);
+		public void MoveFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false);
+
+		public void DeleteFile(string fullPath);
 	}
 
 	public class NormalFileSystemProvider : IFileSystemProvider {
@@ -74,12 +80,12 @@
 			return GetFullPath(Path.Combine(AlbumDirectory, pathInAlbum));
 		}
 
-		public void CopyFile(string srcPath, string destPath, bool overwrite = false) {
-			File.Copy(srcPath, destPath, overwrite);
-		}
-
 		public string GetRelativePath(string relativeTo, string path) {
 			return Path.GetRelativePath(relativeTo, path);
+		}
+
+		public void CopyFile(string srcPath, string destPath, bool overwrite = false) {
+			File.Copy(srcPath, destPath, overwrite);
 		}
 
 		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
@@ -89,8 +95,27 @@
 			CopyFile(srcPath, destPath, overwrite);
 		}
 
+		public void MoveFile(string srcPath, string destPath, bool overwrite = false) {
+			File.Move(srcPath, destPath, overwrite);
+		}
+
+		public void MoveFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
+			var dir = Path.GetDirectoryName(destPath);
+			if (dir is not null)
+				Directory.CreateDirectory(dir);
+			MoveFile(srcPath, destPath, overwrite);
+		}
+
 		public void SetFileCreation(string fullPath, DateTime creationDate) {
 			File.SetCreationTime(fullPath, creationDate);
+		}
+
+		public void SetFileModification(string fullPath, DateTime modificationDate) {
+			File.SetLastWriteTime(fullPath, modificationDate);
+		}
+
+		public void DeleteFile(string fullPath) {
+			File.Delete(fullPath);
 		}
 	}
 }

@@ -1,6 +1,4 @@
 ﻿using AlbumLibrary;
-using MetadataExtractor.Formats.Exif;
-using MetadataExtractor;
 using FileInfo = AlbumLibrary.FileInfo;
 
 namespace AlbumTest {
@@ -19,7 +17,8 @@ namespace AlbumTest {
 
 		public TestFileSystemProvider(string dir, IEnumerable<string> files, bool emulateCopy = false) {
 			Directory = dir;
-			Files = new List<FileInfo>(from f in files select new FileInfo(GetFullPath(f), null, DateTime.Now, DateTime.Now, null, null));
+			Files = new List<FileInfo>(from f in files select new FileInfo(GetFullPath(f), null, DateTime.Now, DateTime.Now, null, null,
+				GetRelativePath(Directory, GetFullPath(f))));
 			EmulateCopy = emulateCopy;
 			AlbumDirectory = dir;
 		}
@@ -88,13 +87,13 @@ namespace AlbumTest {
 			return Path.GetFullPath(Path.Combine(AlbumDirectory, pathInAlbum)).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 		}
 
+		public string GetRelativePath(string relativeTo, string path) {
+			return Path.GetRelativePath(relativeTo, path);
+		}
+
 		public void CopyFile(string srcPath, string destPath, bool overwrite = false) {
 			if (!EmulateCopy)
 				throw new NotImplementedException();
-		}
-
-		public string GetRelativePath(string relativeTo, string path) {
-			return Path.GetRelativePath(relativeTo, path);
 		}
 
 		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
@@ -102,7 +101,27 @@ namespace AlbumTest {
 				throw new NotImplementedException();
 		}
 
+		public void MoveFile(string srcPath, string destPath, bool overwrite = false) {
+			if (!EmulateCopy)
+				throw new NotImplementedException();
+		}
+
+		public void MoveFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false) {
+			if (!EmulateCopy)
+				throw new NotImplementedException();
+		}
+
 		public void SetFileCreation(string fullPath, DateTime creationDate) {
+			if (!EmulateCopy)
+				throw new NotImplementedException();
+		}
+
+		public void SetFileModification(string fullPath, DateTime modificationDate) {
+			if (!EmulateCopy)
+				throw new NotImplementedException();
+		}
+
+		public void DeleteFile(string fullPath) {
 			if (!EmulateCopy)
 				throw new NotImplementedException();
 		}
