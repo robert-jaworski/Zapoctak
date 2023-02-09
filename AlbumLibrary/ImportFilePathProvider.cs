@@ -125,6 +125,8 @@
 				if (fileSystem.DirectoryExists(p)) {
 					int files = 0, dirs = 0;
 					foreach (var file in fileSystem.EnumerateFiles(p)) {
+						if (Path.GetFileName(file).StartsWith('.'))
+							continue;
 						if (allowedExtensions.Contains(Path.GetExtension(file))) {
 							files++;
 							yield return file;
@@ -132,6 +134,8 @@
 					}
 					if (Recursive) {
 						foreach (var dir in fileSystem.EnumerateDirectories(p).Reverse()) {
+							if (Path.GetFileName(dir).StartsWith('.'))
+								continue;
 							dirs++;
 							paths.Push(dir);
 						}
@@ -164,6 +168,8 @@
 			if (fileSystem.DirectoryExists(p)) {
 				int files = 0;
 				foreach (var file in fileSystem.EnumerateFiles(p)) {
+					if (Path.GetFileName(file).StartsWith('.'))
+						continue;
 					if (start is not null && file.CompareTo(start) < 0)
 						continue;
 					if (end is not null && file.CompareTo(end) > 0)

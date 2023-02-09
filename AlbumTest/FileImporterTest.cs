@@ -38,7 +38,7 @@ namespace AlbumTest {
 
 			var paths = importFilePathProvider.GetFilePaths(fileSystem, errHandler).ToList();
 
-			var fileImporter = new FileCopyImporter(fileSystem, new SuffixDuplicateResolver());
+			var fileImporter = new FileCopyImporter(fileSystem, new SuffixDuplicateResolver(), "import");
 
 			var importItems = importListProvider.GetImportItems(fileSystem, paths, errHandler);
 

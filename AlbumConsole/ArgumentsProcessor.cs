@@ -73,5 +73,13 @@ namespace AlbumConsole {
 				return false;
 			return true;
 		}
+
+		public bool IsSet(string name) {
+			return HasArgument<FlagArgument>(name) && GetArgument<FlagArgument>(name).IsSet;
+		}
+
+		public bool IsNotSet(string name) {
+			return HasArgument<FlagArgument>(name) && !GetArgument<FlagArgument>(name).IsSet;
+		}
 	}
 }

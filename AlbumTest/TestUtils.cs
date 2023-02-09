@@ -91,6 +91,11 @@ namespace AlbumTest {
 			return Path.GetRelativePath(relativeTo, path);
 		}
 
+		public void CreateDirectory(string path) {
+			if (!EmulateCopy)
+				throw new NotImplementedException();
+		}
+
 		public void CopyFile(string srcPath, string destPath, bool overwrite = false) {
 			if (!EmulateCopy)
 				throw new NotImplementedException();
@@ -124,6 +129,34 @@ namespace AlbumTest {
 		public void DeleteFile(string fullPath) {
 			if (!EmulateCopy)
 				throw new NotImplementedException();
+		}
+
+		public void NewTransaction(string? info = "") { }
+
+		public void EndTransaction() { }
+
+		public FileAttributes GetFileAttributes(string fullPath) {
+			throw new NotImplementedException();
+		}
+
+		public void SetFileAttributes(string fullPath, FileAttributes attributes) {
+			throw new NotImplementedException();
+		}
+
+		public StreamReader ReadText(string fullPath) {
+			throw new NotImplementedException();
+		}
+
+		public TextWriter WriteText(string fullPath, bool append = false) {
+			throw new NotImplementedException();
+		}
+
+		public FileSystemTransaction? Undo(ILogger logger) {
+			throw new NotImplementedException();
+		}
+
+		public FileSystemTransaction? Redo(ILogger logger) {
+			throw new NotImplementedException();
 		}
 	}
 

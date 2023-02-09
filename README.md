@@ -14,10 +14,10 @@ Na ètení EXIF dat byla použita následující knihovna: https://drewnoakes.com/code
 - [x] Posunování èasu pøi importu, a také již importovaných souborù - ~~pøepsání EXIFu~~ a pøejmenování souboru
 - [ ] Indexovací soubory
 - [x] Poèítání hashù - kontrola duplikátù
-- [ ] Mazání - koš
-- [ ] Undo - historie zmìn
-- [x] Backup
-- [ ] Select, export - vybírání fotek splòující urèíté vlastnosti a jejich export, popø. jiné operace na nich
+- [x] Mazání - koš
+- [x] `undo` - historie zmìn
+- [x] `backup`
+- [x] ~~select~~, `export` - vybírání fotek splòující urèíté vlastnosti a jejich export, popø. jiné operace na nich (`change`)
 - [ ] Interaktivní mód
 
 ## Složkový systém projektu

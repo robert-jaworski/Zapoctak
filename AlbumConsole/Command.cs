@@ -53,9 +53,10 @@ namespace AlbumConsole {
 				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("no-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("no-suffix", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Import) },
 			{ "export", new Command("export", "Exports specified files from the album to the specified directory. " +
-				"By default targets all files in the album.",
+				"By default targets all files in the album. This command does not support undo.",
 				new List<ArgumentDefinition> {
 				new ArgumentDefinition("export-to", 'e', CLIArgumentType.String, null, true),
 				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
@@ -67,7 +68,7 @@ namespace AlbumConsole {
 				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Export) },
 			{ "change", new Command("change", "Changes names and dates of specified files in the album. By default targets all files in the album. " +
 				"Ignores EXIF and uses only the file creation date.",
@@ -85,9 +86,10 @@ namespace AlbumConsole {
 				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("no-suffix", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Change) },
 			{ "backup", new Command("backup", "Backs up the specified files in the album. By default targets all files in the album. " +
-				"Ignores EXIF and uses only the file creation date.",
+				"Ignores EXIF and uses only the file creation date. This command does not support undo.",
 				new List<ArgumentDefinition> {
 				new ArgumentDefinition("backup-to", 'e', CLIArgumentType.String, null, true),
 				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
@@ -98,8 +100,40 @@ namespace AlbumConsole {
 				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgumentDefinition("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Backup) },
+			{ "delete", new Command("delete", "Deletes the specified files in the album. By default targets all files in the album. " +
+				"Ignores EXIF and uses only the file creation date.",
+				new List<ArgumentDefinition> {
+				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
+				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgumentDefinition("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+			}, DefaultCommandsActions.Delete) },
+			{ "history", new Command("history", "Shows saved history.",
+				new List<ArgumentDefinition> {
+				new ArgumentDefinition("clear", 'c', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("clear-undo", 'u', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("clear-redo", 'r', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+			}, DefaultCommandsActions.History) },
+			{ "undo", new Command("undo", "Undo last operation.",
+				new List<ArgumentDefinition> {
+				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+			}, DefaultCommandsActions.Undo) },
+			{ "redo", new Command("redo", "Redo last undone operation.",
+				new List<ArgumentDefinition> {
+				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+			}, DefaultCommandsActions.Redo) },
 		};
 
 		public string Name { get; }
@@ -186,24 +220,32 @@ namespace AlbumConsole {
 	/// </summary>
 	public static class DefaultCommandsActions {
 		public static bool RequiresConfirmation(CommandArguments args) {
-			if (args.HasArgument<FlagArgument>("yes") && args.GetArgument<FlagArgument>("yes").IsSet) {
-				if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet)
+			if (args.IsSet("no-undo"))
+				return true;
+			if (args.IsSet("yes")) {
+				if (args.IsSet("no"))
 					return true;
 				return false;
 			}
-			if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet) {
+			if (args.IsSet("no")) {
 				return false;
 			}
 			return true;
 		}
 
 		public static bool Confirm(CommandArguments args, string msg) {
-			if (args.HasArgument<FlagArgument>("yes") && args.GetArgument<FlagArgument>("yes").IsSet) {
-				if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet)
+			if (args.IsSet("no-undo")) {
+				if (args.IsSet("yes") || args.IsSet("no")) {
+					Console.WriteLine("Since --no-undo is set, confirmation is required and cannot be skipped.");
+				}
+				return ConfirmPrompt(msg);
+			}
+			if (args.IsSet("yes")) {
+				if (args.IsSet("no"))
 					return ConfirmPrompt(msg, true);
 				return true;
 			}
-			if (args.HasArgument<FlagArgument>("no") && args.GetArgument<FlagArgument>("no").IsSet) {
+			if (args.IsSet("no")) {
 				return false;
 			}
 			return ConfirmPrompt(msg);
@@ -445,7 +487,24 @@ namespace AlbumConsole {
 			return null;
 		}
 
-		public static CommandResult? GetImportFilePathProvider(CommandArguments args, out IImportFilePathProvider importFilePathProvider) {
+		public static CommandResult? GetFileSystemProvider(CommandArguments args, string dir, out IFileSystemProvider fileSystemProvider,
+			string? secondaryDir = null) {
+			fileSystemProvider = new NormalFileSystemProvider(dir);
+			if (args.IsNotSet("no-undo")) {
+				if (secondaryDir is not null)
+					fileSystemProvider = new UndoFileSystemProvider(fileSystemProvider, secondaryDir);
+				else
+					fileSystemProvider = new UndoFileSystemProvider(fileSystemProvider);
+			}
+			return null;
+		}
+
+		public static CommandResult? GetImportFilePathProvider(CommandArguments args, out IImportFilePathProvider importFilePathProvider,
+			IImportFilePathProvider? defaultProvider = null) {
+			if (defaultProvider is not null && args.GetArgument<FilesArgument>("files").Files.Count == 0) {
+				importFilePathProvider = defaultProvider;
+				return null;
+			}
 			IErrorHandler errHandler = new ErrorListHandler();
 			importFilePathProvider = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files, GetExtensions(args), errHandler);
 			if (errHandler.IsError) {
@@ -461,7 +520,7 @@ namespace AlbumConsole {
 				else
 					fileInfoProvider = new NoEXIFDateFileInfoProvider();
 			} else {
-				if (args.HasArgument<FlagArgument>("no-exif-date") && args.GetArgument<FlagArgument>("no-exif-date").IsSet)
+				if (args.IsSet("no-exif-date"))
 					fileInfoProvider = new NoEXIFDateFileInfoProvider();
 				else
 					fileInfoProvider = new EXIFFileInfoProvider();
@@ -470,9 +529,10 @@ namespace AlbumConsole {
 		}
 
 		public static CommandResult? GetImportItems(CommandArguments args, IImportFilePathProvider importFilePathProvider,
-			List<IFileFilter> fileFilters, IFileSystemProvider fileSystem, out IEnumerable<ImportItem> importItems, string verb,
+			List<IFileFilter> fileFilters, IFileSystemProvider fileSystem, out IEnumerable<ImportItem> importItems, string message, string verb,
 			IFileInfoProvider? useFileInfoProvider = null, IFileNameProvider? useFileNameProvider = null) {
 			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
+			var longNames = args.IsSet("long-names");
 
 			IFileNameProvider fileNameProvider;
 			if (useFileNameProvider is not null) {
@@ -504,8 +564,6 @@ namespace AlbumConsole {
 
 			IErrorHandler errHandler = new ErrorListHandler();
 
-			var longNames = args.HasArgument<FlagArgument>("long-names") && args.GetArgument<FlagArgument>("long-names").IsSet;
-
 			if (RequiresConfirmation(args) || !Confirm(args, "You should never see this message.")) {
 				var importList = importListProvider.GetImportList(fileSystem, importFilePathProvider, errHandler);
 				if (verbose) {
@@ -519,6 +577,7 @@ namespace AlbumConsole {
 					}
 					Console.WriteLine();
 				}
+				Console.WriteLine(message);
 				Console.WriteLine($"Targeted {importList.AllItems.Count} files. Will {verb} {importList.ImportItems.Count} files," +
 					$" {importList.CancelledItems.Count} files have been cancelled.\n");
 				if (Confirm(args, "Do you wish to proceed?")) {
@@ -535,15 +594,15 @@ namespace AlbumConsole {
 		}
 
 		public static CommandResult? GetDuplicateResolver(CommandArguments args, out IDuplicateResolver duplicateResolver, bool noSuffix = false) {
-			if (noSuffix || args.HasArgument<FlagArgument>("no-suffix") && args.GetArgument<FlagArgument>("no-suffix").IsSet)
+			if (noSuffix || args.IsSet("no-suffix"))
 				duplicateResolver = new SkipDuplicateResolver();
 			else
 				duplicateResolver = new SuffixDuplicateResolver();
 
-			if (args.HasArgument<FlagArgument>("dont-hash-duplicates") && !args.GetArgument<FlagArgument>("dont-hash-duplicates").IsSet)
+			if (args.IsNotSet("dont-hash-duplicates"))
 				duplicateResolver = new HashDuplicateResolver(duplicateResolver);
 
-			if (args.HasArgument<FlagArgument>("hash-duplicates") && args.GetArgument<FlagArgument>("hash-duplicates").IsSet)
+			if (args.IsSet("hash-duplicates"))
 				duplicateResolver = new HashDuplicateResolver(duplicateResolver);
 
 			return null;
@@ -552,8 +611,14 @@ namespace AlbumConsole {
 		public static IErrorHandler DoImport(CommandArguments args, IFileImporter fileImporter, IEnumerable<ImportItem> items,
 			out List<ImportItem> imported) {
 			IErrorHandler errHandler = new ErrorLogHandler();
-			imported = fileImporter.ImportItems(items, errHandler,
-				new ConsoleLogger(args.HasArgument<FlagArgument>("long-names") && args.GetArgument<FlagArgument>("long-names").IsSet)).ToList();
+			try {
+				imported = fileImporter.ImportItems(items, errHandler,
+					new ConsoleLogger(args.IsSet("long-names"))).ToList();
+			} catch (InvalidOperationException e) {
+				imported = new();
+				errHandler.Error("Invalid operation:");
+				errHandler.Error(e.Message);
+			}
 			return errHandler;
 		}
 
@@ -565,17 +630,22 @@ namespace AlbumConsole {
 		}
 
 		public static CommandResult Import(CommandArguments args) {
+			var longNames = args.IsSet("long-names");
+
 			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
 			if (res is not null)
 				return res;
 
-			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("album-dir").Value);
+			res = GetFileSystemProvider(args, args.AlbumDirectory, out IFileSystemProvider fileSystem);
+			if (res is not null)
+				return res;
 
 			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider);
 			if (res is not null)
 				return res;
 
-			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items, "import");
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items,
+				$"Importing files to {GetSuitablePath(args.AlbumDirectory, fileSystem, longNames)}", "import");
 			if (res is not null)
 				return res;
 
@@ -583,7 +653,7 @@ namespace AlbumConsole {
 			if (res is not null)
 				return res;
 
-			IFileImporter importer = new FileCopyImporter(fileSystem, duplicateResolver);
+			IFileImporter importer = new FileCopyImporter(fileSystem, duplicateResolver, "import");
 			var errHandler = DoImport(args, importer, items, "{0} files successfully imported.");
 
 			Console.WriteLine();
@@ -592,30 +662,30 @@ namespace AlbumConsole {
 		}
 
 		public static CommandResult Export(CommandArguments args) {
+			var longNames = args.IsSet("long-names");
+
 			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
 			if (res is not null)
 				return res;
 
-			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("export-to").Value);
+			var destination = args.GetArgument<StringArgument>("export-to").Value;
+			var fileSystem = new NormalFileSystemProvider(destination);
 
-			IImportFilePathProvider importFilePathProvider;
-			if (args.GetArgument<FilesArgument>("files").Files.Count != 0) {
-				res = GetImportFilePathProvider(args, out importFilePathProvider);
-				if (res is not null)
-					return res;
-			} else {
-				importFilePathProvider = new ImportFilePathProvider(new List<IFilePathProvider> {
-					new DirectoryFilePathProvider(fileSystem.GetFullPath(args.GetArgument<StringArgument>("album-dir").Value), true)
-				}, GetExtensions(args));
-			}
+			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+			}, GetExtensions(args)));
+			if (res is not null)
+				return res;
 
-			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items, "export");
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items,
+				$"Exporting files from {GetSuitablePath(args.AlbumDirectory, fileSystem, longNames)} to " +
+				$"{GetSuitablePath(destination, fileSystem, longNames)}", "export");
 			if (res is not null)
 				return res;
 
 			IDuplicateResolver duplicateResolver = new SkipDuplicateResolver();
 
-			IFileImporter importer = new FileCopyImporter(fileSystem, duplicateResolver);
+			IFileImporter importer = new FileCopyImporter(fileSystem, duplicateResolver, "export");
 			var errHandler = DoImport(args, importer, items, "{0} files successfully exported.");
 
 			Console.WriteLine();
@@ -624,29 +694,29 @@ namespace AlbumConsole {
 		}
 
 		public static CommandResult Change(CommandArguments args) {
+			var longNames = args.IsSet("long-names");
+
 			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
 			if (res is not null)
 				return res;
 
-			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("album-dir").Value);
+			res = GetFileSystemProvider(args, args.AlbumDirectory, out IFileSystemProvider fileSystem);
+			if (res is not null)
+				return res;
 
-			IImportFilePathProvider importFilePathProvider;
-			if (args.GetArgument<FilesArgument>("files").Files.Count != 0) {
-				res = GetImportFilePathProvider(args, out importFilePathProvider);
-				if (res is not null)
-					return res;
-			} else {
-				importFilePathProvider = new ImportFilePathProvider(new List<IFilePathProvider> {
-					new DirectoryFilePathProvider(fileSystem.GetFullPath(args.GetArgument<StringArgument>("album-dir").Value), true)
-				}, GetExtensions(args));
-			}
+			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+			}, GetExtensions(args)));
+			if (res is not null)
+				return res;
 
 			res = GetFileInfoProvider(args, out IFileInfoProvider fileInfoProvider);
 			if (res is not null)
 				return res;
 
-			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items, "change",
-				new RelativePathFileInfoProvider(fileInfoProvider, fileSystem.GetFullPath(args.GetArgument<StringArgument>("album-dir").Value)));
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items,
+				$"Changing files in {GetSuitablePath(args.AlbumDirectory, fileSystem, longNames)}", "change",
+				new RelativePathFileInfoProvider(fileInfoProvider, fileSystem.GetFullPath(args.AlbumDirectory)));
 			if (res is not null)
 				return res;
 
@@ -654,7 +724,7 @@ namespace AlbumConsole {
 			if (res is not null)
 				return res;
 
-			IFileImporter importer = new FileMoveImporter(fileSystem, duplicateResolver);
+			IFileImporter importer = new FileMoveImporter(fileSystem, duplicateResolver, "change");
 			var errHandler = DoImport(args, importer, items, "{0} files successfully changed.");
 
 			Console.WriteLine();
@@ -663,25 +733,30 @@ namespace AlbumConsole {
 		}
 
 		public static CommandResult Backup(CommandArguments args) {
+			var longNames = args.IsSet("long-names");
+
 			// Copy files
-			Console.WriteLine("Copying files from the album to the destination...");
+			//Console.WriteLine("Copying files from the album to the destination...");
 
 			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
 			if (res is not null)
 				return res;
 
-			var fileSystem = new NormalFileSystemProvider(args.GetArgument<StringArgument>("backup-to").Value);
+			var destination = args.GetArgument<StringArgument>("backup-to").Value;
+			var fileSystem = new NormalFileSystemProvider(destination);
 
-			IImportFilePathProvider importFilePathProvider;
-			if (args.GetArgument<FilesArgument>("files").Files.Count != 0) {
-				res = GetImportFilePathProvider(args, out importFilePathProvider);
-				if (res is not null)
-					return res;
-			} else {
-				importFilePathProvider = new ImportFilePathProvider(new List<IFilePathProvider> {
-					new DirectoryFilePathProvider(fileSystem.GetFullPath(args.GetArgument<StringArgument>("album-dir").Value), true)
-				}, GetExtensions(args));
+			if (fileSystem.GetFullPath(destination).StartsWith(fileSystem.GetFullPath(args.AlbumDirectory)) ||
+				fileSystem.GetFullPath(args.AlbumDirectory).StartsWith(fileSystem.GetFullPath(destination))) {
+				Console.WriteLine("Neither the album nor the backup destination should include the other one as a subdirectory. Unexpected things could occur.");
+				if (!Confirm(args, "Do you still wish to proceed?"))
+					return new CommandResult(false, "Cancelled by user");
 			}
+
+			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+			}, GetExtensions(args)));
+			if (res is not null)
+				return res;
 
 			res = GetFileInfoProvider(args, out IFileInfoProvider fileInfoProvider);
 			if (res is not null)
@@ -689,34 +764,39 @@ namespace AlbumConsole {
 
 			IFileNameProvider fileNameProvider = new TemplateFileNameProvider(@"{file:rel}{noext}");
 
-			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items, "back up",
-				new RelativePathFileInfoProvider(fileInfoProvider, fileSystem.GetFullPath(args.GetArgument<StringArgument>("album-dir").Value)),
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items,
+				$"Copying files from {GetSuitablePath(args.AlbumDirectory, fileSystem, longNames)} to " +
+				$"{GetSuitablePath(destination, fileSystem, longNames)}", "back up",
+				new RelativePathFileInfoProvider(fileInfoProvider, fileSystem.GetFullPath(args.AlbumDirectory)),
 				fileNameProvider);
 			if (res is not null)
 				return res;
 
 			IDuplicateResolver duplicateResolver = new OverwriteDuplicateResolver(true, args.GetArgument<FlagArgument>("hash-duplicates").IsSet);
 
-			IFileImporter importer = new FileCopyImporter(fileSystem, duplicateResolver);
+			IFileImporter importer = new FileCopyImporter(fileSystem, duplicateResolver, "backup");
 			var errHandler = DoImport(args, importer, items, out List<ImportItem> backedUp);
+
 			Console.WriteLine("{0} files successfully backed up.", backedUp.Count);
 			Console.WriteLine();
 
 			// Delete files
-			Console.WriteLine("Deleting files from the destination, which are not in the album...");
+			//Console.WriteLine("Deleting files from the destination, which are not in the album...");
 
 			var fileFilters2 = fileFilters;
 
-			var fileSystem2 = new NormalFileSystemProvider(args.GetArgument<StringArgument>("album-dir").Value);
+			var fileSystem2 = new NormalFileSystemProvider(args.AlbumDirectory);
 
 			IImportFilePathProvider importFilePathProvider2 = new ImportFilePathProvider(new List<IFilePathProvider> {
-				new DirectoryFilePathProvider(fileSystem2.GetFullPath(args.GetArgument<StringArgument>("backup-to").Value), true)
+				new DirectoryFilePathProvider(fileSystem2.GetFullPath(destination), true)
 			}, GetExtensions(args));
 
 			IFileNameProvider fileNameProvider2 = fileNameProvider;
 
-			res = GetImportItems(args, importFilePathProvider2, fileFilters2, fileSystem2, out IEnumerable<ImportItem> items2, "check",
-				new RelativePathFileInfoProvider(fileInfoProvider, fileSystem2.GetFullPath(args.GetArgument<StringArgument>("backup-to").Value)),
+			res = GetImportItems(args, importFilePathProvider2, fileFilters2, fileSystem2, out IEnumerable<ImportItem> items2,
+				$"Deleting files from {GetSuitablePath(destination, fileSystem, longNames)} which are not in " +
+				$"{GetSuitablePath(args.AlbumDirectory, fileSystem, longNames)}", "check",
+				new RelativePathFileInfoProvider(fileInfoProvider, fileSystem2.GetFullPath(destination)),
 				fileNameProvider2);
 			if (res is not null) {
 				Console.WriteLine("{0} files successfully backed up.", backedUp.Count);
@@ -727,7 +807,7 @@ namespace AlbumConsole {
 			if (args.GetArgument<FlagArgument>("hash-duplicates").IsSet)
 				duplicateResolver2 = new HashDuplicateResolver(duplicateResolver2);
 
-			IFileImporter importer2 = new FileDeleteImporter(fileSystem2, duplicateResolver2);
+			IFileImporter importer2 = new FileDeleteImporter(fileSystem2, duplicateResolver2, null);
 			var errHandler2 = DoImport(args, importer2, items2, out List<ImportItem> deleted);
 
 			Console.WriteLine("{0} files successfully backed up.", backedUp.Count);
@@ -735,6 +815,167 @@ namespace AlbumConsole {
 			Console.WriteLine();
 
 			return new CommandResult(true, errHandler.GetAll().Concat(errHandler2.GetAll()).ToList());
+		}
+
+		public static CommandResult Delete(CommandArguments args) {
+			var longNames = args.IsSet("long-names");
+
+			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
+			if (res is not null)
+				return res;
+
+			res = GetFileSystemProvider(args, args.AlbumDirectory, out IFileSystemProvider fileSystem);
+			if (res is not null)
+				return res;
+
+			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+			}, GetExtensions(args)));
+			if (res is not null)
+				return res;
+
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem, out IEnumerable<ImportItem> items,
+				$"Deleting files from {GetSuitablePath(args.AlbumDirectory, fileSystem, longNames)}", "import", null,
+				new TemplateFileNameProvider("NONE{noext}"));
+			if (res is not null)
+				return res;
+
+			IDuplicateResolver duplicateResolver = new SkipDuplicateResolver();
+
+			IFileImporter importer = new FileDeleteImporter(fileSystem, duplicateResolver, "delete", true);
+
+			if (args.IsSet("no-undo")) {
+				Console.WriteLine("This is probably a bad idea since --no-undo is set.");
+				if (!ConfirmPrompt("Do you REALLY wish to delete these files?"))
+					return new CommandResult(false, "Cancelled by user");
+			}
+			var errHandler = DoImport(args, importer, items, "{0} files successfully deleted.");
+
+			Console.WriteLine();
+
+			return new CommandResult(true, errHandler.GetAll().ToList());
+		}
+
+		public static CommandResult History(CommandArguments args) {
+			var verbose = args.IsSet("verbose");
+			var longNames = args.IsSet("long-names");
+
+			var fileSystem = new UndoFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory));
+
+			Console.WriteLine($"Reading UNDO file {GetSuitablePath(fileSystem.GetUndoFilePath(), fileSystem, longNames)}");
+			var transactions = fileSystem.ReadUndoFile().ToList();
+			Console.WriteLine("{0} transactions:", transactions.Count);
+			foreach (var t in transactions) {
+				Console.WriteLine("{0}\t({1})\t -- {2} actions", t.Info, t.Date, t.Actions.Count);
+				if (verbose) {
+					foreach (var a in t.Actions) {
+						if (a is FileSystemMoveAction move) {
+							Console.WriteLine("  Move\t\t{0}\t -> {1}", GetSuitablePath(move.FromPath, fileSystem, longNames),
+								GetSuitablePath(move.ToPath, fileSystem, longNames));
+						} else if (a is FileSystemCopyAction copy) {
+							Console.WriteLine("  Copy\t\t{0}\t -> {1}", GetSuitablePath(copy.FromPath, fileSystem, longNames),
+								GetSuitablePath(copy.ToPath, fileSystem, longNames));
+						} else if (a is FileSystemCreationAction creation) {
+							Console.WriteLine("  Creation\t{0}\t{1}\t -> {2}", GetSuitablePath(creation.Path, fileSystem, longNames),
+								creation.FromDate, creation.ToDate);
+						} else if (a is FileSystemModificationAction modification) {
+							Console.WriteLine("  Modification\t{0}\t{1}\t -> {2}", GetSuitablePath(modification.Path, fileSystem, longNames),
+								modification.FromDate, modification.ToDate);
+						} else {
+							Console.WriteLine("  Unknown action");
+						}
+					}
+				}
+			}
+			Console.WriteLine();
+			var count = transactions.Count;
+
+			Console.WriteLine($"Reading REDO file {GetSuitablePath(fileSystem.GetRedoFilePath(), fileSystem, longNames)}");
+			transactions = fileSystem.ReadUndoFile(true).ToList();
+			Console.WriteLine("{0} transactions:", transactions.Count);
+			foreach (var t in transactions) {
+				Console.WriteLine("{0}\t({1})\t -- {2} actions", t.Info, t.Date, t.Actions.Count);
+				if (verbose) {
+					foreach (var a in t.Actions) {
+						if (a is FileSystemMoveAction move) {
+							Console.WriteLine("  Move\t\t{0}\t -> {1}", GetSuitablePath(move.FromPath, fileSystem, longNames),
+								GetSuitablePath(move.ToPath, fileSystem, longNames));
+						} else if (a is FileSystemCopyAction copy) {
+							Console.WriteLine("  Copy\t\t{0}\t -> {1}", GetSuitablePath(copy.FromPath, fileSystem, longNames),
+								GetSuitablePath(copy.ToPath, fileSystem, longNames));
+						} else if (a is FileSystemCreationAction creation) {
+							Console.WriteLine("  Creation\t{0}\t{1}\t -> {2}", GetSuitablePath(creation.Path, fileSystem, longNames),
+								creation.FromDate, creation.ToDate);
+						} else if (a is FileSystemModificationAction modification) {
+							Console.WriteLine("  Modification\t{0}\t{1}\t -> {2}", GetSuitablePath(modification.Path, fileSystem, longNames),
+								modification.FromDate, modification.ToDate);
+						} else {
+							Console.WriteLine("  Unknown action");
+						}
+					}
+				}
+			}
+			Console.WriteLine();
+			count += transactions.Count;
+
+			if (args.IsSet("clear")) {
+				if (Confirm(args, "Do you really wish to clear history?")) {
+					File.Delete(fileSystem.GetUndoFilePath());
+					File.Delete(fileSystem.GetRedoFilePath());
+					Console.WriteLine("History cleared.");
+					Console.WriteLine("You can now clear the trash directory: {0}",
+						GetSuitablePath(fileSystem.GetTrashDirectoryPath(), fileSystem, longNames));
+				} else {
+					return new CommandResult(true, "Cancelled by user");
+				}
+			} else {
+				if (args.IsSet("clear-redo")) {
+					if (Confirm(args, "Do you really wish to clear redo history?")) {
+						File.Delete(fileSystem.GetRedoFilePath());
+						Console.WriteLine("Redo history cleared.");
+					} else {
+						return new CommandResult(true, "Cancelled by user");
+					}
+				}
+				if (args.IsSet("clear-undo")) {
+					if (Confirm(args, "Do you really wish to clear undo history?")) {
+						File.Delete(fileSystem.GetUndoFilePath());
+						Console.WriteLine("Undo history cleared.");
+					} else {
+						return new CommandResult(true, "Cancelled by user");
+					}
+				}
+			}
+
+			return new CommandResult(true, $"{count} transactions in total");
+		}
+
+		public static CommandResult Undo(CommandArguments args) {
+			var verbose = args.IsSet("verbose");
+			var longNames = args.IsSet("long-names");
+
+			var fileSystem = new UndoFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory));
+
+			var t = fileSystem.Undo(verbose ? new ConsoleLogger(longNames) : new NoLogger());
+			if (t is not null) {
+				return new CommandResult(true, $"Successfully undid {t.Actions.Count} actions from {t.Date}");
+			} else {
+				return new CommandResult(false, "Nothing to undo");
+			}
+		}
+
+		public static CommandResult Redo(CommandArguments args) {
+			var verbose = args.IsSet("verbose");
+			var longNames = args.IsSet("long-names");
+
+			var fileSystem = new UndoFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory));
+
+			var t = fileSystem.Redo(verbose ? new ConsoleLogger(longNames) : new NoLogger());
+			if (t is not null) {
+				return new CommandResult(true, $"Successfully redid {t.Actions.Count} actions from {t.Date}");
+			} else {
+				return new CommandResult(false, "Nothing to redo");
+			}
 		}
 	}
 }
