@@ -1,14 +1,40 @@
 ﻿namespace AlbumLibrary {
+	/// <summary>
+	/// An interface for handling errors (log them to the console, save them into a list, fail the test).
+	/// </summary>
 	public interface IErrorHandler {
+		/// <summary>
+		/// Handle a new error.
+		/// </summary>
+		/// <param name="message"></param>
 		public void Error(string message);
 
+		/// <summary>
+		/// Returns the yet unprocessed errors.
+		/// </summary>
+		/// <returns></returns>
 		public IEnumerable<string> GetUnprocessed();
+
+		/// <summary>
+		/// Returns all errors which were handled by this <see cref="IErrorHandler"/>
+		/// </summary>
+		/// <returns></returns>
 		public IEnumerable<string> GetAll();
 
+		/// <summary>
+		/// Determines whether there is an unprocessed error.
+		/// </summary>
 		public bool IsError { get; }
+
+		/// <summary>
+		/// Determines whether any error has occurred.
+		/// </summary>
 		public bool WasError { get; }
 	}
 
+	/// <summary>
+	/// An <see cref="IErrorHandler"/> which saves the errors into a list.
+	/// </summary>
 	public class ErrorListHandler : IErrorHandler {
 		protected List<string> Errors { get; set; } = new();
 		protected List<string> AllErrors { get; set; } = new();
@@ -23,7 +49,7 @@
 
 		public IEnumerable<string> GetUnprocessed() {
 			var res = Errors;
-			Errors = new List<string>();
+			Errors = new();
 			return res;
 		}
 
@@ -32,10 +58,16 @@
 		}
 	}
 
+	/// <summary>
+	/// An exception used by <see cref="ErrorAbortHandler"/>
+	/// </summary>
 	public class AbortException : Exception {
 		public AbortException(string msg) : base(msg) { }
 	}
 
+	/// <summary>
+	/// Throws <see cref="AbortException"/> when an error occurs.
+	/// </summary>
 	public class ErrorAbortHandler : IErrorHandler {
 		public bool IsError => false;
 		public bool WasError => false;
@@ -53,6 +85,9 @@
 		}
 	}
 
+	/// <summary>
+	/// Logs the errors to the console as they occur.
+	/// </summary>
 	public class ErrorLogHandler : IErrorHandler {
 		protected List<string> AllErrors { get; set; } = new();
 

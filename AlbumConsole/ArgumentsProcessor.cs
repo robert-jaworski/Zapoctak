@@ -17,6 +17,12 @@ namespace AlbumConsole {
 			NamedArguments = named;
 		}
 
+		/// <summary>
+		/// Parses given command-line arguments. Expects the first argument to be the name of the executable.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <returns></returns>
+		/// <exception cref="ArgumentException"></exception>
 		public static CommandArguments ParseArguments(string[] args) {
 			if (args.Length == 0)
 				throw new ArgumentException("No arguments supplied");
@@ -66,6 +72,12 @@ namespace AlbumConsole {
 			return (T)NamedArguments[name];
 		}
 
+		/// <summary>
+		/// Determines whether the specified argument exists. That is if the used command specified a default for this argument of if it was set.
+		/// </summary>
+		/// <typeparam name="T">The expected type</typeparam>
+		/// <param name="name">The name of the argument</param>
+		/// <returns></returns>
 		public bool HasArgument<T>(string name) where T : IArgument {
 			if (!NamedArguments.ContainsKey(name))
 				return false;
@@ -74,10 +86,20 @@ namespace AlbumConsole {
 			return true;
 		}
 
+		/// <summary>
+		/// Determines whether the specified flag argument is set.
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns></returns>
 		public bool IsSet(string name) {
 			return HasArgument<FlagArgument>(name) && GetArgument<FlagArgument>(name).IsSet;
 		}
 
+		/// <summary>
+		/// Determines whether the specified flag argument is not set but could be.
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns></returns>
 		public bool IsNotSet(string name) {
 			return HasArgument<FlagArgument>(name) && !GetArgument<FlagArgument>(name).IsSet;
 		}

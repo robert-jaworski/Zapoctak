@@ -47,7 +47,7 @@
 			}
 
 			/// <summary>
-			/// Extracts argument values from an argument list
+			/// Extracts argument values from an argument list.
 			/// </summary>
 			/// <param name="args">Command line arguments to parse</param>
 			/// <returns>The values of the specified arguments or the default values</returns>
@@ -106,6 +106,11 @@
 				return named;
 			}
 
+			/// <summary>
+			/// Returns the full description of the command. Used by help command.
+			/// </summary>
+			/// <param name="recurse"></param>
+			/// <returns></returns>
 			public string GetFullDescription(int recurse) {
 				if (Include.Count == 0) {
 					return Description;
@@ -117,10 +122,16 @@
 			}
 		}
 
+		/// <summary>
+		/// Custom exception for invalid CLI definitions.
+		/// </summary>
 		public class CLIDefinitionException : Exception {
 			public CLIDefinitionException(string msg) : base(msg) { }
 		}
 
+		/// <summary>
+		/// Custom exception for invalid CLI usage.
+		/// </summary>
 		public class CLIArgumentException : Exception {
 			public Dictionary<string, IArgument> ProcessedArgs { get; set; }
 
@@ -129,14 +140,23 @@
 			}
 		}
 
+		/// <summary>
+		/// Custom exception for incorrect argument type used.
+		/// </summary>
 		public class CLIArgumentExtractValueException : Exception {
 			public CLIArgumentExtractValueException(string msg) : base(msg) { }
 		}
 
+		/// <summary>
+		/// Custom exception for when an unknown argument is specified.
+		/// </summary>
 		public class CLIUnknownArgumentException : CLIArgumentException {
 			public CLIUnknownArgumentException(string msg, Dictionary<string, IArgument> processedArgs) : base(msg, processedArgs) { }
 		}
 
+		/// <summary>
+		/// Different types of arguments.
+		/// </summary>
 		public enum CLIArgumentType {
 			Flag,
 			Number,
@@ -145,7 +165,7 @@
 		}
 
 		/// <summary>
-		/// The definition of an argument
+		/// The definition of an command-line argument.
 		/// </summary>
 		public class ArgumentDefinition {
 			public string Name { get; }
@@ -173,6 +193,13 @@
 					Description = $"[{Description}]";
 			}
 
+			/// <summary>
+			/// Extracts the current argument.
+			/// </summary>
+			/// <param name="en"></param>
+			/// <returns></returns>
+			/// <exception cref="CLIArgumentExtractValueException"></exception>
+			/// <exception cref="NotImplementedException"></exception>
 			internal IArgument ExtractValue(ArgumentIterator en) {
 				switch (Type) {
 				case CLIArgumentType.Flag:
@@ -210,10 +237,13 @@
 		}
 
 		/// <summary>
-		/// Interface for different types of arguments
+		/// Interface for different types of arguments.
 		/// </summary>
 		public interface IArgument { }
 
+		/// <summary>
+		/// Boolean argument.
+		/// </summary>
 		public class FlagArgument : IArgument {
 			public bool IsSet { get; }
 
@@ -238,6 +268,9 @@
 			}
 		}
 
+		/// <summary>
+		/// Integer argument.
+		/// </summary>
 		public class NumberArgument : IArgument {
 			public int Value { get; }
 
@@ -262,6 +295,9 @@
 			}
 		}
 
+		/// <summary>
+		/// Single string argument.
+		/// </summary>
 		public class StringArgument : IArgument {
 			public string Value { get; }
 
@@ -284,6 +320,9 @@
 			}
 		}
 
+		/// <summary>
+		/// An argument for a lis of files - basically an array of strings.
+		/// </summary>
 		public class FilesArgument : IArgument {
 			public List<string> Files { get; }
 
@@ -309,6 +348,9 @@
 			}
 		}
 
+		/// <summary>
+		/// Class which iterates over command-line arguments.
+		/// </summary>
 		internal class ArgumentIterator {
 			protected string[] Args { get; }
 

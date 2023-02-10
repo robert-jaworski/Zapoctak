@@ -1,10 +1,21 @@
 ﻿namespace AlbumLibrary {
+	/// <summary>
+	/// An interface for importing (or otherwise processing) given files.
+	/// </summary>
 	public interface IFileImporter {
-
-
+		/// <summary>
+		/// Processes given <see cref="ImportItem"/>
+		/// </summary>
+		/// <param name="importItems"></param>
+		/// <param name="errorHandler"></param>
+		/// <param name="logger"></param>
+		/// <returns>A list of successfully</returns>
 		public IEnumerable<ImportItem> ImportItems(IEnumerable<ImportItem> importItems, IErrorHandler errorHandler, ILogger logger);
 	}
 
+	/// <summary>
+	/// An <see cref="IFileImporter"/> which copies the files to the destination.
+	/// </summary>
 	public class FileCopyImporter : IFileImporter {
 		protected IFileSystemProvider FileSystem { get; }
 		protected IDuplicateResolver DuplicateResolver { get; }
@@ -58,6 +69,9 @@
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="IFileImporter"/> which moves the files to the destination.
+	/// </summary>
 	public class FileMoveImporter : IFileImporter {
 		protected IFileSystemProvider FileSystem { get; }
 		protected IDuplicateResolver DuplicateResolver { get; }
@@ -111,6 +125,11 @@
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="IFileImporter"/> which checks if the destination file exists and is the same as the source
+	/// (if the given <see cref="IDuplicateResolver"/> supports checking file contents).
+	/// If it is not, then the file is deleted. Has an option to simply delete every source file without checking anything.
+	/// </summary>
 	public class FileDeleteImporter : IFileImporter {
 		protected IFileSystemProvider FileSystem { get; set; }
 		protected IDuplicateResolver DuplicateResolver { get; set; }

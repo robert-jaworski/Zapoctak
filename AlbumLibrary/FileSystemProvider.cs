@@ -1,11 +1,23 @@
 ﻿using System.IO;
 
 namespace AlbumLibrary {
+	/// <summary>
+	/// A interface which provides common operations with files. Useful for implementing things like undo.
+	/// </summary>
 	public interface IFileSystemProvider {
 		string GetFullPath(string relPath);
 		string GetRelativePath(string relativeTo, string path);
 
+		/// <summary>
+		/// Get the full path of the current album directory.
+		/// </summary>
+		/// <returns></returns>
 		string GetAlbumDirectory();
+		/// <summary>
+		/// Get the full path a file supposing it resides in the current album.
+		/// </summary>
+		/// <param name="pathInAlbum"></param>
+		/// <returns></returns>
 		string GetFullPathAlbum(string pathInAlbum);
 
 		bool FileExists(string fullPath);
@@ -31,19 +43,60 @@ namespace AlbumLibrary {
 		public void CreateDirectory(string path);
 
 		public void CopyFile(string srcPath, string destPath, bool overwrite = false);
+		/// <summary>
+		/// Copies file from <paramref name="srcPath"/> to <paramref name="destPath"/> and creates all necessary subdirectories.
+		/// </summary>
+		/// <param name="srcPath"></param>
+		/// <param name="destPath"></param>
+		/// <param name="overwrite"></param>
 		public void CopyFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false);
 
 		public void MoveFile(string srcPath, string destPath, bool overwrite = false);
+		/// <summary>
+		/// Moves file from <paramref name="srcPath"/> to <paramref name="destPath"/> and creates all necessary subdirectories.
+		/// </summary>
+		/// <param name="srcPath"></param>
+		/// <param name="destPath"></param>
+		/// <param name="overwrite"></param>
 		public void MoveFileCreatingDirectories(string srcPath, string destPath, bool overwrite = false);
 
 		public void DeleteFile(string fullPath);
 
+		/// <summary>
+		/// Starts a new transaction. Any file modifying actions can only be called when a transaction is active. Useful for things like undo.
+		/// </summary>
+		/// <param name="info"></param>
 		public void NewTransaction(string? info = "");
+		/// <summary>
+		/// Ends the current trasaction.
+		/// </summary>
 		public void EndTransaction();
+		/// <summary>
+		/// Undoes the last transaction if supported.
+		/// </summary>
+		/// <param name="logger"></param>
+		/// <returns>The transaction that was successfully undone, or <see langword="null"/> if there was none to undo.</returns>
+		/// <exception cref="NotImplementedException"></exception>
 		public FileSystemTransaction? Undo(ILogger logger);
+		/// <summary>
+		/// Redoes the last undone transaction if supported.
+		/// </summary>
+		/// <param name="logger"></param>
+		/// <returns>The transaction that was successfully redone, or <see langword="null"/> if there was none to redo.</returns>
+		/// <exception cref="NotImplementedException"></exception>
 		public FileSystemTransaction? Redo(ILogger logger);
+
+		/// <summary>
+		/// Reads the contents of the undo file if it exists.
+		/// </summary>
+		/// <param name="redo">Whether to read the redo file instead.</param>
+		/// <returns></returns>
+		public IEnumerable<FileSystemTransaction> ReadUndoFile(bool redo = false);
 	}
 
+	/// <summary>
+	/// Basically a wrapper around <see cref="File"/> and <see cref="Directory"/>. Does not support undoing and redoing.
+	/// </summary>
 	public class NormalFileSystemProvider : IFileSystemProvider {
 		protected string AlbumDirectory { get; }
 		
@@ -164,8 +217,16 @@ namespace AlbumLibrary {
 		public FileSystemTransaction? Redo(ILogger logger) {
 			throw new NotImplementedException();
 		}
+
+		public IEnumerable<FileSystemTransaction> ReadUndoFile(bool redo = false) {
+			yield break;
+		}
 	}
 
+	/// <summary>
+	/// An <see cref="IFileSystemProvider"/> which provides basic undo and redo functionality
+	/// by using a trash directory and logging all actions to a file.
+	/// </summary>
 	public class UndoFileSystemProvider : IFileSystemProvider {
 		protected IFileSystemProvider FileSystem { get; }
 
@@ -173,7 +234,7 @@ namespace AlbumLibrary {
 		protected string RedoFilePath { get; }
 		protected string TrashDirectory { get; }
 
-		protected Random RNG { get;  } = new();
+		protected Random RNG { get; } = new();
 
 		protected TextWriter? UndoFile { get; set; }
 
@@ -482,8 +543,8 @@ namespace AlbumLibrary {
 			return transactions[^1];
 		}
 
-		public IEnumerable<FileSystemTransaction> ReadUndoFile(bool redo = false) {
-			var path = redo ? RedoFilePath : UndoFilePath;
+		public IEnumerable<FileSystemTransaction> ReadUndoFile(bool redoFileInstead = false) {
+			var path = redoFileInstead ? RedoFilePath : UndoFilePath;
 			if (!File.Exists(path))
 				yield break;
 
@@ -518,11 +579,14 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// A file system transaction representation. Stores things like date and time and all the actions which occurred.
+	/// </summary>
 	public class FileSystemTransaction {
 		protected List<FileSystemAction> actions;
 
 		public IReadOnlyList<FileSystemAction> Actions => actions;
-		public DateTime Date { get; }
+		public DateTime Date { get; protected set; }
 		public string Info { get; }
 		public bool ShouldJoin { get; }
 
@@ -537,6 +601,11 @@ namespace AlbumLibrary {
 			ShouldJoin = shouldJoin;
 		}
 
+		/// <summary>
+		/// Creates a new <see cref="FileSystemTransaction"/> by reading the necessary information from a stream.
+		/// </summary>
+		/// <param name="stream"></param>
+		/// <returns></returns>
 		public static FileSystemTransaction? ReadFromStream(StreamReader stream) {
 			var firstLine = stream.ReadLine();
 			if (firstLine is null)
@@ -569,6 +638,10 @@ namespace AlbumLibrary {
 			return new FileSystemTransaction(actions, date, info, shouldJoin);
 		}
 
+		/// <summary>
+		/// Writes all the necessary information for reconstructing the current instance to the stream.
+		/// </summary>
+		/// <param name="writer"></param>
 		public void WriteToStream(TextWriter writer) {
 			writer.WriteLine("{0}{1} {2:o}", TransactionString, ShouldJoin, Date);
 			writer.WriteLine("{0}{1}", InfoString, Info);
@@ -578,10 +651,20 @@ namespace AlbumLibrary {
 			writer.WriteLine();
 		}
 
+		/// <summary>
+		/// Combines this transaction with the specified one - adding all the actions of <paramref name="transaction"/>.
+		/// Modifies the current instance.
+		/// </summary>
+		/// <param name="transaction"></param>
 		public void Join(FileSystemTransaction transaction) {
 			actions.AddRange(transaction.Actions);
 		}
 
+		/// <summary>
+		/// Undoes all actions in reverse essentially undoing all effects the current transaction had.
+		/// </summary>
+		/// <param name="fileSystem"></param>
+		/// <param name="logger"></param>
 		public void Undo(IFileSystemProvider fileSystem, ILogger logger) {
 			foreach (var action in actions.Reverse<FileSystemAction>()) {
 				action.Undo(fileSystem, logger);
@@ -589,6 +672,9 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An abstract class which describes a single file modifying action that can be executed on an <see cref="IFileSystemProvider"/>.
+	/// </summary>
 	public abstract class FileSystemAction {
 		public const string MoveString			= "Move            ";
 		public const string CopyString			= "Copy            ";
@@ -597,6 +683,13 @@ namespace AlbumLibrary {
 		public const string ModificationString	= "Modification    ";
 		public const string OfPathString		= "Of              ";
 
+		public abstract string AffectedPath { get; }
+
+		/// <summary>
+		/// Creates a new <see cref="FileSystemAction"/> by reading the necessary information from a stream.
+		/// </summary>
+		/// <param name="stream"></param>
+		/// <returns></returns>
 		public static FileSystemAction? ReadFromStream(StreamReader stream) {
 			var line = stream.ReadLine();
 			if (string.IsNullOrEmpty(line))
@@ -651,14 +744,27 @@ namespace AlbumLibrary {
 			}
 		}
 
+		/// <summary>
+		/// Writes all the necessary information for reconstructing the current instance to the stream.
+		/// </summary>
+		/// <param name="writer"></param>
 		public abstract void WriteToStream(TextWriter writer);
 
+		/// <summary>
+		/// Undoes the effects of this action.
+		/// </summary>
+		/// <param name="fileSystem"></param>
+		/// <param name="logger"></param>
 		public abstract void Undo(IFileSystemProvider fileSystem, ILogger logger);
 	}
 
+	/// <summary>
+	/// An <see cref="FileSystemAction"/> describing moving files.
+	/// </summary>
 	public class FileSystemMoveAction : FileSystemAction {
 		public string FromPath { get; }
 		public string ToPath { get; }
+		public override string AffectedPath => ToPath;
 
 		public FileSystemMoveAction(string fromPath, string toPath) {
 			FromPath = fromPath;
@@ -676,9 +782,13 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="FileSystemAction"/> describing copying files.
+	/// </summary>
 	public class FileSystemCopyAction : FileSystemAction {
 		public string FromPath { get; }
 		public string ToPath { get; }
+		public override string AffectedPath => ToPath;
 
 		public FileSystemCopyAction(string fromPath, string toPath) {
 			FromPath = fromPath;
@@ -696,10 +806,14 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="FileSystemAction"/> describing changing the creation date of files.
+	/// </summary>
 	public class FileSystemCreationAction : FileSystemAction {
 		public string Path { get; }
 		public DateTime FromDate { get; }
 		public DateTime ToDate { get; }
+		public override string AffectedPath => Path;
 
 		public FileSystemCreationAction(string path, DateTime fromDate, DateTime toDate) {
 			Path = path;
@@ -717,10 +831,14 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="FileSystemAction"/> describing changing the modification date of files.
+	/// </summary>
 	public class FileSystemModificationAction : FileSystemAction {
 		public string Path { get; }
 		public DateTime FromDate { get; }
 		public DateTime ToDate { get; }
+		public override string AffectedPath => Path;
 
 		public FileSystemModificationAction(string path, DateTime fromDate, DateTime toDate) {
 			Path = path;

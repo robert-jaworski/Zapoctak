@@ -177,6 +177,10 @@ namespace AlbumConsole {
 		}
 	}
 
+	/// <summary>
+	/// A class which describes a result of a command - whether it was successful and
+	/// all the additional messages describing the result of the command.
+	/// </summary>
 	public class CommandResult {
 		public bool Success { get; }
 		public List<string> Messages { get; }
@@ -195,6 +199,9 @@ namespace AlbumConsole {
 		public InternalException(string msg) : base(msg) { }
 	}
 
+	/// <summary>
+	/// An <see cref="ILogger"/> which logs all information to the console.
+	/// </summary>
 	public class ConsoleLogger : ILogger {
 		public bool LongNames { get; }
 
@@ -219,6 +226,11 @@ namespace AlbumConsole {
 	/// A class containing the code from the default commands
 	/// </summary>
 	public static class DefaultCommandsActions {
+		/// <summary>
+		/// Determines whether asking the user for confirmation is necessary.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <returns></returns>
 		public static bool RequiresConfirmation(CommandArguments args) {
 			if (args.IsSet("no-undo"))
 				return true;
@@ -233,6 +245,12 @@ namespace AlbumConsole {
 			return true;
 		}
 
+		/// <summary>
+		/// If necessary, asks the user to confirm a specific action.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static bool Confirm(CommandArguments args, string msg) {
 			if (args.IsSet("no-undo")) {
 				if (args.IsSet("yes") || args.IsSet("no")) {
@@ -251,6 +269,12 @@ namespace AlbumConsole {
 			return ConfirmPrompt(msg);
 		}
 
+		/// <summary>
+		/// Asks the user to confirm a specific action.
+		/// </summary>
+		/// <param name="msg"></param>
+		/// <param name="mixed">Whether the user set both <c>--yes</c> and <c>--no</c> flags.</param>
+		/// <returns></returns>
 		public static bool ConfirmPrompt(string msg, bool mixed = false) {
 			if (mixed)
 				Console.WriteLine("You are sending mixed messages - both --yes and --no set!");
@@ -275,10 +299,24 @@ namespace AlbumConsole {
 			}
 		}
 
+		/// <summary>
+		/// Gets the allowed extensions given the command-line arguments.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <returns></returns>
 		public static HashSet<string> GetExtensions(CommandArguments args) {
-			return new HashSet<string>(args.GetArgument<StringArgument>("extensions").Value.Split(',').Select(x => x.StartsWith(".") ? x : "." + x));
+			return new HashSet<string>(args.GetArgument<StringArgument>("extensions").Value.Split(',').Select(x => x.StartsWith(".") ? x.ToLower() : "." + x));
 		}
 
+		/// <summary>
+		/// Returns either the full version or the relative version of <paramref name="path"/>.
+		/// If <paramref name="longNames"/> is set, returns the full version of <paramref name="path"/>,
+		/// otherwise returns whichever one is shorter.
+		/// </summary>
+		/// <param name="path"></param>
+		/// <param name="fileSystem"></param>
+		/// <param name="longNames"></param>
+		/// <returns></returns>
 		public static string GetSuitablePath(string path, IFileSystemProvider fileSystem, bool longNames) {
 			var fullPath = fileSystem.GetFullPath(path);
 			var relPath = fileSystem.GetRelativePath(".", fullPath);
@@ -434,6 +472,12 @@ namespace AlbumConsole {
 			return new CommandResult(true, msg);
 		}
 
+		/// <summary>
+		/// Returns the specified file filters given the command-line arguments.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="fileFilters">The output</param>
+		/// <returns><see langword="null"/> if successful, a <see cref="CommandResult"/> signifying failure otherwise.</returns>
 		public static CommandResult? GetNormalFilters(CommandArguments args, out List<IFileFilter> fileFilters) {
 			fileFilters = new();
 
@@ -487,6 +531,14 @@ namespace AlbumConsole {
 			return null;
 		}
 
+		/// <summary>
+		/// Returns the appropriate <see cref="IFileSystemProvider"/> given the command-line arguments.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="dir"></param>
+		/// <param name="fileSystemProvider">The output</param>
+		/// <param name="secondaryDir"></param>
+		/// <returns><see langword="null"/> if successful, a <see cref="CommandResult"/> signifying failure otherwise.</returns>
 		public static CommandResult? GetFileSystemProvider(CommandArguments args, string dir, out IFileSystemProvider fileSystemProvider,
 			string? secondaryDir = null) {
 			fileSystemProvider = new NormalFileSystemProvider(dir);
@@ -499,6 +551,13 @@ namespace AlbumConsole {
 			return null;
 		}
 
+		/// <summary>
+		/// Extracts the appropriate <see cref="IImportFilePathProvider"/> from the command-line arguments.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="importFilePathProvider">The output</param>
+		/// <param name="defaultProvider"></param>
+		/// <returns><see langword="null"/> if successful, a <see cref="CommandResult"/> signifying failure otherwise.</returns>
 		public static CommandResult? GetImportFilePathProvider(CommandArguments args, out IImportFilePathProvider importFilePathProvider,
 			IImportFilePathProvider? defaultProvider = null) {
 			if (defaultProvider is not null && args.GetArgument<FilesArgument>("files").Files.Count == 0) {
@@ -513,6 +572,12 @@ namespace AlbumConsole {
 			return null;
 		}
 
+		/// <summary>
+		/// Returns the appropriate <see cref="IFileInfoProvider"/> given the command-line arguments.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="fileInfoProvider">The output</param>
+		/// <returns><see langword="null"/> if successful, a <see cref="CommandResult"/> signifying failure otherwise.</returns>
 		public static CommandResult? GetFileInfoProvider(CommandArguments args, out IFileInfoProvider fileInfoProvider) {
 			if (args.HasArgument<FlagArgument>("use-exif-date")) {
 				if (args.GetArgument<FlagArgument>("use-exif-date").IsSet)
@@ -528,6 +593,19 @@ namespace AlbumConsole {
 			return null;
 		}
 
+		/// <summary>
+		/// Returns all files and their destinations, which are to be imported (or exported etc.).
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="importFilePathProvider"></param>
+		/// <param name="fileFilters"></param>
+		/// <param name="fileSystem"></param>
+		/// <param name="importItems">The output</param>
+		/// <param name="message"></param>
+		/// <param name="verb"></param>
+		/// <param name="useFileInfoProvider"></param>
+		/// <param name="useFileNameProvider"></param>
+		/// <returns><see langword="null"/> if successful, a <see cref="CommandResult"/> signifying failure otherwise.</returns>
 		public static CommandResult? GetImportItems(CommandArguments args, IImportFilePathProvider importFilePathProvider,
 			List<IFileFilter> fileFilters, IFileSystemProvider fileSystem, out IEnumerable<ImportItem> importItems, string message, string verb,
 			IFileInfoProvider? useFileInfoProvider = null, IFileNameProvider? useFileNameProvider = null) {
@@ -562,12 +640,12 @@ namespace AlbumConsole {
 				importListProvider = new FilteredImportListProvider(fileFilters, fileInfoProvider, fileNameProvider);
 			}
 
-			IErrorHandler errHandler = new ErrorListHandler();
+			IErrorHandler errHandler = new ErrorLogHandler();
 
 			if (RequiresConfirmation(args) || !Confirm(args, "You should never see this message.")) {
 				var importList = importListProvider.GetImportList(fileSystem, importFilePathProvider, errHandler);
 				if (verbose) {
-					Console.WriteLine("Summary:");
+					Console.WriteLine("\nSummary:");
 					foreach (var item in importList.AllItems) {
 						if (item.Cancelled)
 							Console.WriteLine($"{GetSuitablePath(item.SourcePath, fileSystem, longNames)}\t -- Cancelled");
@@ -575,8 +653,8 @@ namespace AlbumConsole {
 							Console.WriteLine($"{GetSuitablePath(item.SourcePath, fileSystem, longNames)}\t -> " +
 								$"{GetSuitablePath(item.DestinationPath, fileSystem, longNames)}");
 					}
-					Console.WriteLine();
 				}
+				Console.WriteLine();
 				Console.WriteLine(message);
 				Console.WriteLine($"Targeted {importList.AllItems.Count} files. Will {verb} {importList.ImportItems.Count} files," +
 					$" {importList.CancelledItems.Count} files have been cancelled.\n");
@@ -593,6 +671,13 @@ namespace AlbumConsole {
 			return null;
 		}
 
+		/// <summary>
+		/// Returns the appropriate <see cref="IDuplicateResolver"/> given the command-line arguments.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="duplicateResolver">The output</param>
+		/// <param name="noSuffix"></param>
+		/// <returns><see langword="null"/> if successful, a <see cref="CommandResult"/> signifying failure otherwise.</returns>
 		public static CommandResult? GetDuplicateResolver(CommandArguments args, out IDuplicateResolver duplicateResolver, bool noSuffix = false) {
 			if (noSuffix || args.IsSet("no-suffix"))
 				duplicateResolver = new SkipDuplicateResolver();
@@ -608,6 +693,14 @@ namespace AlbumConsole {
 			return null;
 		}
 
+		/// <summary>
+		/// Actually imports (or exports etc.) given files.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="fileImporter"></param>
+		/// <param name="items"></param>
+		/// <param name="imported">List of successfully imported items</param>
+		/// <returns><see cref="ErrorLogHandler"/> with errors that occured (might be empty)</returns>
 		public static IErrorHandler DoImport(CommandArguments args, IFileImporter fileImporter, IEnumerable<ImportItem> items,
 			out List<ImportItem> imported) {
 			IErrorHandler errHandler = new ErrorLogHandler();
@@ -622,6 +715,14 @@ namespace AlbumConsole {
 			return errHandler;
 		}
 
+		/// <summary>
+		/// Actually imports (or exports etc.) given files.
+		/// </summary>
+		/// <param name="args"></param>
+		/// <param name="fileImporter"></param>
+		/// <param name="items"></param>
+		/// <param name="imported">List of successfully imported items</param>
+		/// <returns><see cref="ErrorLogHandler"/> with errors that occured (might be empty)</returns>
 		public static IErrorHandler DoImport(CommandArguments args, IFileImporter fileImporter, IEnumerable<ImportItem> items, string message) {
 			var errHandler = DoImport(args, fileImporter, items, out List<ImportItem> imported);
 
@@ -672,7 +773,7 @@ namespace AlbumConsole {
 			var fileSystem = new NormalFileSystemProvider(destination);
 
 			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
-				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true, false)
 			}, GetExtensions(args)));
 			if (res is not null)
 				return res;
@@ -705,7 +806,7 @@ namespace AlbumConsole {
 				return res;
 
 			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
-				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true, false)
 			}, GetExtensions(args)));
 			if (res is not null)
 				return res;
@@ -753,7 +854,7 @@ namespace AlbumConsole {
 			}
 
 			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
-				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true, false)
 			}, GetExtensions(args)));
 			if (res is not null)
 				return res;
@@ -788,7 +889,7 @@ namespace AlbumConsole {
 			var fileSystem2 = new NormalFileSystemProvider(args.AlbumDirectory);
 
 			IImportFilePathProvider importFilePathProvider2 = new ImportFilePathProvider(new List<IFilePathProvider> {
-				new DirectoryFilePathProvider(fileSystem2.GetFullPath(destination), true)
+				new DirectoryFilePathProvider(fileSystem2.GetFullPath(destination), true, false)
 			}, GetExtensions(args));
 
 			IFileNameProvider fileNameProvider2 = fileNameProvider;
@@ -829,7 +930,7 @@ namespace AlbumConsole {
 				return res;
 
 			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
-				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true)
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true, false)
 			}, GetExtensions(args)));
 			if (res is not null)
 				return res;

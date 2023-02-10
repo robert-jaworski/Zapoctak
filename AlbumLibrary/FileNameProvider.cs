@@ -2,12 +2,28 @@
 using System.Text.RegularExpressions;
 
 namespace AlbumLibrary {
+	/// <summary>
+	/// Provides destination names for the given files using their <see cref="FileInfo"/>.
+	/// </summary>
 	public interface IFileNameProvider {
+		/// <summary>
+		/// Provides destination name for the given file using its <see cref="FileInfo"/>.
+		/// </summary>
+		/// <param name="fileInfo"></param>
+		/// <param name="addExtension"></param>
+		/// <returns></returns>
 		public string GetFileName(FileInfo fileInfo, bool addExtension = true);
 	}
 
+	/// <summary>
+	/// An exception used to signify that the given file cannot be processed.
+	/// For example the <see cref="IFileNameProvider"/> requires the EXIF information about the device, but the file has no EXIF.
+	/// </summary>
 	public class CancelFileCopyException : Exception { }
 
+	/// <summary>
+	/// An <see cref="IFileNameProvider"/> which assigns names using a simple placeholder schema.
+	/// </summary>
 	public class TemplateFileNameProvider : IFileNameProvider {
 		public string Template { get; }
 
@@ -70,6 +86,11 @@ namespace AlbumLibrary {
 			}
 		}
 
+		/// <summary>
+		/// Combines multiple templates into a <see cref="MultipleFileNameProvider"/>.
+		/// </summary>
+		/// <param name="templates"></param>
+		/// <returns></returns>
 		public static MultipleFileNameProvider MultipleTemplates(IEnumerable<string> templates) {
 			return new MultipleFileNameProvider(from t in templates select new TemplateFileNameProvider(t));
 		}
@@ -219,10 +240,16 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// The supplied file name template for <see cref="TemplateFileNameProvider"/> is invalid.
+	/// </summary>
 	public class InvalidFileNameTemplateException : Exception {
 		public InvalidFileNameTemplateException(string msg) : base(msg) { }
 	}
 
+	/// <summary>
+	/// An <see cref="IFileNameProvider"/> which uses multiple different providers and uses the first successful one.
+	/// </summary>
 	public class MultipleFileNameProvider : IFileNameProvider {
 		protected List<IFileNameProvider> FileNameProviders { get; }
 

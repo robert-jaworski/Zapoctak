@@ -15,6 +15,7 @@ Parametry jsou ètyø typù:
     - seznam souborù mùže obsahovat název složky ukonèený `/`, resp. `\` (napø. `photos/`), ten bude odpovídat všem souborùm v dané složce (nerekurzivní)
     - pro rekurzivní procházení podadresáøù ukonèete název složky `/...`, resp. `\...`
     - seznam souborù mùže taky obsahovat intervaly souborù, specifikované pomocí `...` (napø. `img010.jpg ... img029.jpg`, `img100.jpg...`, `...foto/img100.jpg`, `../foto/img100.jpg ... ../foto/img300.jpg`)
+    - odkaz na poslednì upravené soubory `@last`, popø. `@lastN` kde N je poèet operací, které nás zajímají, tedy `@last3` bude odpovídat všem souborùm, které jsme upravili v posledních tøech operacích (tedy pøikazech)
 
 ## Univerzální parametry
 - `--album-dir`, `-d` - nastaví adresáø s albem, se kterým budeme pracovat. Defaultní hodnota je aktuální adresáø.

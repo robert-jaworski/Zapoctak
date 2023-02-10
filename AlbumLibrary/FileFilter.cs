@@ -1,10 +1,23 @@
 ﻿using Sharpen;
 
 namespace AlbumLibrary {
+	/// <summary>
+	/// An interface which decides whether a file should be processed given its <see cref="FileInfo"/>.
+	/// It can also modify the info, see <see cref="TimeShiftFilter"/>.
+	/// </summary>
 	public interface IFileFilter {
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="file"></param>
+		/// <returns><see langword="null"/> if the file should not be processed,
+		/// otherwise the (potentially modified) <see cref="FileInfo"/> of the file.</returns>
 		FileInfo? Filter(FileInfo file);
 	}
 
+	/// <summary>
+	/// An <see cref="IFileFilter"/> which shifts the EXIF, creation and modification times of the given file by a specified amount.
+	/// </summary>
 	public class TimeShiftFilter : IFileFilter {
 		public TimeSpan Shift { get; }
 
@@ -18,6 +31,9 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="IFileFilter"/> which allows only files which are older than a specified point in time.
+	/// </summary>
 	public class BeforeDateFilter : IFileFilter {
 		public DateTime Date { get; }
 
@@ -30,6 +46,9 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="IFileFilter"/> which allows only files which are younger than a specified point in time.
+	/// </summary>
 	public class AfterDateFilter : IFileFilter {
 		public DateTime Date { get; }
 
@@ -42,6 +61,10 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="IFileFilter"/> which runs the <see cref="TemplateFileNameProvider"/> with the given template and <see cref="FileInfo"/>.
+	/// If the resulting name is in the format <c>xxx=yyy</c> or <c>aaa=bbb=ccc</c> etc., then the file will be processed if the equations are true.
+	/// </summary>
 	public class TemplateFilter : IFileFilter {
 		public IFileNameProvider FileNameProvider { get; }
 
@@ -59,6 +82,10 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="IFileFilter"/> which acts like a logical or. Returns the first non-<see langword="null"/> result
+	/// from the specified list of <see cref="IFileFilter"/>
+	/// </summary>
 	public class FirstFilter : IFileFilter {
 		protected List<IFileFilter> FileFilters { get; }
 
@@ -71,6 +98,9 @@ namespace AlbumLibrary {
 		}
 	}
 
+	/// <summary>
+	/// An <see cref="IImportListProvider"/> which filters the files using a given list of <see cref="IFileFilter"/>.
+	/// </summary>
 	public class FilteredImportListProvider : IImportListProvider {
 		protected List<IFileFilter> FileFilters { get; set; }
 		protected IFileInfoProvider FileInfoProvider { get; set; }

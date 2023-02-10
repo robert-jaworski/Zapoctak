@@ -158,6 +158,10 @@ namespace AlbumTest {
 		public FileSystemTransaction? Redo(ILogger logger) {
 			throw new NotImplementedException();
 		}
+
+		public IEnumerable<FileSystemTransaction> ReadUndoFile(bool redo = false) {
+			yield break;
+		}
 	}
 
 	internal class ErrorTestFailHandler : IErrorHandler {
