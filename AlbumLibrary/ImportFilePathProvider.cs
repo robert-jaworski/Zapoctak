@@ -62,7 +62,7 @@ namespace AlbumLibrary {
 					continue;
 				}
 
-				var allDrives = file.StartsWith(Path.VolumeSeparatorChar);
+				var allDrives = OperatingSystem.IsWindows() && file.StartsWith(Path.VolumeSeparatorChar);
 				if (allDrives) {
 					file = "C" + file;
 				}
