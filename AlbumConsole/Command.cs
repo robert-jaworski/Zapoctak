@@ -1,26 +1,32 @@
 ﻿using AlbumLibrary;
-using AlbumLibrary.CLI;
 using System.Text.RegularExpressions;
 
 namespace AlbumConsole {
+	public record ArgsDef(string name, char shortName, CLIArgumentType type, IArgument? defaultValue,
+			bool isImplicit);
+
 	/// <summary>
 	/// Class which defines a command which can be run. This includes the arguments the command takes and the code that will be run.
 	/// </summary>
 	public class Command {
-		public static CLIDefinition UniversalParameters { get; } = new CLIDefinition("general parameters", new List<ArgumentDefinition> {
-			new ArgumentDefinition("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
-			new ArgumentDefinition("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
-			new ArgumentDefinition("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false)
-		});
-
 		public static Dictionary<string, Command> Commands { get; } = new Dictionary<string, Command> {
-			{ "help", new Command("help", "Prints information about available commands", new List<ArgumentDefinition> {
-				new ArgumentDefinition("command", 'c', CLIArgumentType.String, new StringArgument(""), true)
+			{ "help", new Command("help", "Prints information about available commands", new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("command", 'c', CLIArgumentType.String, new StringArgument(""), true),
+				new ArgsDef("help-config", 'g', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("all-commands", 'a', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Help) },
-			{ "debug", new Command("debug", "For debugging arguments parsing", new List<ArgumentDefinition> {
-				new ArgumentDefinition("test-implicit", ' ', CLIArgumentType.String, null, true),
-				new ArgumentDefinition("test-number", 'n', CLIArgumentType.Number, new NumberArgument(0), false),
-				new ArgumentDefinition("test-files", 'f', CLIArgumentType.Files, new FilesArgument(), false),
+			{ "debug", new Command("debug", "For debugging arguments parsing", new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("test-implicit", ' ', CLIArgumentType.String, null, true),
+				new ArgsDef("test-number", 'n', CLIArgumentType.Number, new NumberArgument(0), false),
+				new ArgsDef("test-files", 'f', CLIArgumentType.Files, new FilesArgument(), false),
 			}, args => {
 				Console.WriteLine($"Exe dir    = {args.ExecutableDirectory}");
 				Console.WriteLine($"Album dir  = {args.AlbumDirectory}");
@@ -29,110 +35,150 @@ namespace AlbumConsole {
 				return new CommandResult(true);
 			}) },
 			{ "interactive", new Command("interactive", "Allows you to run multiple commands after each other, " +
-				"propagates the following parameters: verbose, album-dir", new List<ArgumentDefinition> {
-				new ArgumentDefinition("strict", 's', CLIArgumentType.Flag, new FlagArgument(false), false),
+				"propagates the following parameters: verbose, album-dir", new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("strict", 's', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Interactive) },
 			{ "metadata", new Command("metadata", "Show the metadata of specified images. Use --verbose to show all available metadata.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, null, true),
-				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
-				new ArgumentDefinition("count", 'c', CLIArgumentType.Number, new NumberArgument(-1), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("files", 'f', CLIArgumentType.Files, null, true),
+				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgsDef("count", 'c', CLIArgumentType.Number, new NumberArgument(-1), false),
 			}, DefaultCommandsActions.Metadata) },
 			{ "import", new Command("import", "Imports specified files into the album.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, null, true),
-				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
-				new ArgumentDefinition("template", 't', CLIArgumentType.String, new StringArgument(@"{YYYY}/{MM}/{YY}{MM}{DD}-{hh}{mm}{ss}"), false),
-				new ArgumentDefinition("time-shift", 's', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no-suffix", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("files", 'f', CLIArgumentType.Files, null, true),
+				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgsDef("template", 't', CLIArgumentType.String, new StringArgument(@"{YYYY}/{MM}/{YY}{MM}{DD}-{hh}{mm}{ss}"), false),
+				new ArgsDef("time-shift", 's', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no-suffix", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Import) },
 			{ "export", new Command("export", "Exports specified files from the album to the specified directory. " +
 				"By default targets all files in the album. This command does not support undo.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("export-to", 'e', CLIArgumentType.String, null, true),
-				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
-				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
-				new ArgumentDefinition("template", 't', CLIArgumentType.String, new StringArgument(@"{file:name}"), false),
-				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("export-to", 'e', CLIArgumentType.String, null, true),
+				new ArgsDef("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
+				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgsDef("template", 't', CLIArgumentType.String, new StringArgument(@"{file:name}"), false),
+				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Export) },
 			{ "change", new Command("change", "Changes names and dates of specified files in the album. By default targets all files in the album. " +
 				"Ignores EXIF and uses only the file creation date.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
-				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
-				new ArgumentDefinition("template", 't', CLIArgumentType.String, new StringArgument(@"{YYYY}/{MM}/{YY}{MM}{DD}-{hh}{mm}{ss}"), false),
-				new ArgumentDefinition("time-shift", 's', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no-suffix", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
+				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgsDef("template", 't', CLIArgumentType.String, new StringArgument(@"{YYYY}/{MM}/{YY}{MM}{DD}-{hh}{mm}{ss}"), false),
+				new ArgsDef("time-shift", 's', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no-suffix", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Change) },
 			{ "backup", new Command("backup", "Backs up the specified files in the album. By default targets all files in the album. " +
 				"Ignores EXIF and uses only the file creation date. This command does not support undo.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("backup-to", 'e', CLIArgumentType.String, null, true),
-				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
-				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
-				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("backup-to", 'e', CLIArgumentType.String, null, true),
+				new ArgsDef("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
+				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Backup) },
 			{ "delete", new Command("delete", "Deletes the specified files in the album. By default targets all files in the album. " +
 				"Ignores EXIF and uses only the file creation date.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
-				new ArgumentDefinition("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
-				new ArgumentDefinition("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
+				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no-undo", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Delete) },
 			{ "history", new Command("history", "Shows saved history.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("clear", 'c', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("clear-undo", 'u', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("clear-redo", 'r', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("clear", 'c', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("clear-undo", 'u', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("clear-redo", 'r', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.History) },
 			{ "undo", new Command("undo", "Undo last operation.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Undo) },
 			{ "redo", new Command("redo", "Redo last undone operation.",
-				new List<ArgumentDefinition> {
-				new ArgumentDefinition("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Redo) },
 		};
 
@@ -152,7 +198,11 @@ namespace AlbumConsole {
 		}
 
 		public Command(string name, string description, List<ArgumentDefinition> argsDef, CommandAction action) :
-			this(name, description, new CLIDefinition($"{name} parameters", argsDef, new List<CLIDefinition> { UniversalParameters }), action) { }
+			this(name, description, new CLIDefinition($"{name} parameters", argsDef, new List<CLIDefinition> { }), action) { }
+
+		public Command(string name, string description, List<ArgsDef> argsDef, CommandAction action) :
+			this(name, description, argsDef.Select(x => new ArgumentDefinition(x.name, x.shortName, x.type,
+				new ConfigDefaultValueProvider(name, x.name, x.type, x.defaultValue), x.isImplicit)).ToList(), action) { }
 
 		public string GetFullDescription(int recurse = -1) {
 			return $"{Name} {Parameters.GetFullDescription(recurse)}\n\t{Description}\n";
@@ -170,9 +220,9 @@ namespace AlbumConsole {
 			return Commands[args.Command].Action(args);
 		}
 
-		public static CLIDefinition GetCLIDefinition(string command) {
+		public static CLIDefinition? GetCLIDefinition(string command) {
 			if (!Commands.ContainsKey(command))
-				return UniversalParameters;
+				return null;
 			return Commands[command].Parameters;
 		}
 	}
@@ -232,10 +282,8 @@ namespace AlbumConsole {
 		/// <param name="args"></param>
 		/// <returns></returns>
 		public static bool RequiresConfirmation(CommandArguments args) {
-			if (args.IsSet("no-undo"))
-				return true;
 			if (args.IsSet("yes")) {
-				if (args.IsSet("no"))
+				if (args.IsSet("no-undo") || args.IsSet("no"))
 					return true;
 				return false;
 			}
@@ -326,18 +374,90 @@ namespace AlbumConsole {
 		public static CommandResult Help(CommandArguments args) {
 			var cmd = args.GetArgument<StringArgument>("command").Value;
 			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
-			if (string.IsNullOrEmpty(cmd)) {
-				Console.WriteLine("Use 'help {command}' or 'command --help' to learn more about specific commands\n" +
-					(verbose ? "" : "Run 'help' with the --verbose option to learn more about {general parameters}\n"));
+
+			if (args.IsSet("help-config")) {
+				var fileSystem = new NormalFileSystemProvider(args.AlbumDirectory);
+				var path = fileSystem.GetFullPathAlbum("config");
+				using var file = fileSystem.WriteText(path, true);
+				file.WriteLine();
+				file.WriteLine("; This is a comment.");
+				file.WriteLine("[default] ; This defines a profile named 'default', which is always active");
+				file.WriteLine("; We can set the verbose flag to be always set and set the default extensions:");
+				file.WriteLine("--verbose = ");
+				file.WriteLine("--extensions = .jpg,.png");
+				file.WriteLine("; We can also specify the default to apply to only certain commands:");
+				file.WriteLine("import--files = ./...");
+				file.WriteLine("\n[last] ; Let's define another profile");
+				file.WriteLine("--files = @last");
+				file.WriteLine("--long-names = ");
+				file.WriteLine("\n[myphotos] ; And another");
+				file.WriteLine("--template = 'My Photos/{YYYY}{MM}{DD}-{hh}{mm}{ss}'");
+
+				Console.WriteLine("Dummy config saved to: {0}", path);
+			} else if (args.IsSet("all-commands")) {
 				Console.WriteLine("Here is a list of available commands:\n");
 				foreach (var kv in Command.Commands) {
-					Console.WriteLine(kv.Value.GetFullDescription(verbose ? -1 : 0));
+					if (kv.Key != "debug" && kv.Key != "interactive")
+						Console.WriteLine(kv.Value.GetFullDescription());
 				}
+			} else if (string.IsNullOrEmpty(cmd)) {
+				Console.WriteLine("You can use several commands to import, change, delete, export and backup files in the album.");
+				Console.WriteLine("The album is a directory which can contain several subdirectories and files, usually photos.");
+				Console.WriteLine();
+				Console.WriteLine("When targeting files you can use several ways to do so:");
+				Console.WriteLine("  - The path to the file: 'test/img001.jpg'");
+				Console.WriteLine("  - A range of files in a directory: 'test/img001.jpg ... test/img010.jpg'");
+				Console.WriteLine("  - A unbounded range: 'test/img010.jpg...' or '...test/img010.jpg'");
+				Console.WriteLine("  - An entire directory: 'test/'");
+				Console.WriteLine("  - An entire directory recursively: 'test/...'");
+				Console.WriteLine("  - On windows you can specify to check all available drives: ':\\DCIM\\'");
+				Console.WriteLine("  - When using undo features you can target files which you interacted with previously: '@last'");
+				Console.WriteLine("  - For example if you import twice and then want to change these files you can use: '@last2'");
+				Console.WriteLine();
+				Console.WriteLine("The names which will be assigned to the files after importing are specified using a template.");
+				Console.WriteLine("The default template is {YYYY}/{MM}/{YY}{MM}{DD}-{hh}{mm}{ss}, the extension is added automatically.");
+				Console.WriteLine("Available placeholder values are:");
+				Console.WriteLine("  `year`/`Y`\n  `YYYY`\n  `YY` - last two digits of the year\n  `month`/`M`\n  `MM`\n  `day`/`D`\n  `DD`\n" +
+					"  `hour`/`h`\n  `hh`\n  `minute`/`m`\n  `mm`\n  `second`/`s`\n  `ss`\n  `device:name`\n  `device:manufacturer`\n  `device:model`\n" +
+					"  `noextension`/`noext` - do not append extension\n  `extension`/`ext`/`.` - specify a desired extension, " +
+					"when the file has a different extension, this template will be skipped\n" +
+					"  `file`/`file:name`\n  `file:extension`/`file:ext`\n  `file:relativePath`/`file:relPath`/`file:rel`");
+				Console.WriteLine("Placeholders can take options ({YYYY:exif}, {DD:create}) and length ({M#3}).");
+				Console.WriteLine("Available options for date related placeholders are 'exif', 'create' and 'modify'.");
+				Console.WriteLine("When no option is specified for a date related placeholder, either the EXIF date or file creation date will be used.");
+				Console.WriteLine("Multiple templates can be used to assign different names to different file types:");
+				Console.WriteLine("  {YYYY}/{MM}/{YY}{MM}{DD}-{hh}{mm}{ss}{ext:jpg},png/{file:name}{ext:png}");
+				Console.WriteLine("When using this option don't forget to allow different file extensions to be processed.");
+				Console.WriteLine("You can do this by setting the -x/--extensions option to '.jpg,.png' for example. The default is '.jpg'");
+				Console.WriteLine();
+				Console.WriteLine("When two files should share the same name, then:");
+				Console.WriteLine("  - If --hash-duplicates is set, then the files are hashed to determine if they are the same.");
+				Console.WriteLine("  - If the files are the same, then they are skipped.");
+				Console.WriteLine("  - If --hash-duplicates is not set, or if the files are not the same, then a suffix is appended to the name.");
+				Console.WriteLine("  - If --no-suffix is set, no suffix is appended and the file is skipped.");
+				Console.WriteLine("  - This is repeated until a suitable name is or a duplicate is found.");
+				Console.WriteLine();
+				Console.WriteLine("The name template syntax is also utilized to filter files using the --filter option.");
+				Console.WriteLine("The --filter option should be set to some name template which is evaluated for each file.");
+				Console.WriteLine("When the result is in the format 'aaa=bbb' or 'xxx=yyy=zzz' etc., the file will be processed if the equations are true.");
+				Console.WriteLine();
+				Console.WriteLine("Most actions will require confirmation, you can skip this by setting the --yes or --no flags.");
+				Console.WriteLine("Actions such as `import`, `change` and `delete` can also be undone.");
+				Console.WriteLine();
+				Console.WriteLine("You can setup a config file in the directory with the executable or in the album directory.");
+				Console.WriteLine("This config file can be used to specify the default values of command arguments.");
+				Console.WriteLine("These default values can be grouped to profiles.");
+				Console.WriteLine();
+				Console.WriteLine("Run `help -g` to create a dummy config file.");
+				Console.WriteLine("Run `help -a` to list all commands.");
+				Console.WriteLine("Use 'help {command}' or 'command -?' to learn more about specific commands");
+
 			} else {
 				if (!Command.Commands.ContainsKey(cmd))
 					return new CommandResult(false, $"There is no such command: {cmd}");
 				Console.WriteLine(Command.Commands[cmd].GetFullDescription());
 			}
+
 			return new CommandResult(true);
 		}
 
@@ -359,8 +479,7 @@ namespace AlbumConsole {
 				if (string.IsNullOrWhiteSpace(cmd))
 					continue;
 
-				var m = new Regex(@"'([^']+)'|""([^\\""]+)""|\S+").Matches(cmd);
-				var parsedArgs = m.Select(x => x.Groups[1].Success ? x.Groups[1].Value : x.Groups[2].Success ? x.Groups[2].Value : x.Value).ToArray();
+				var parsedArgs = CLIDefinition.ParseArguments(cmd);
 
 				IEnumerable<string> newArgs;
 				if (parsedArgs.Any(x => x.StartsWith("--") ? x == "--album-dir" : x.StartsWith("-") && x.Contains('d'))) {
@@ -560,7 +679,7 @@ namespace AlbumConsole {
 		/// <returns><see langword="null"/> if successful, a <see cref="CommandResult"/> signifying failure otherwise.</returns>
 		public static CommandResult? GetImportFilePathProvider(CommandArguments args, out IImportFilePathProvider importFilePathProvider,
 			IImportFilePathProvider? defaultProvider = null) {
-			if (defaultProvider is not null && args.GetArgument<FilesArgument>("files").Files.Count == 0) {
+			if (defaultProvider is not null && args.GetArgument<FilesArgument>("files").IsDefault) {
 				importFilePathProvider = defaultProvider;
 				return null;
 			}

@@ -1,5 +1,4 @@
 using AlbumConsole;
-using AlbumLibrary.CLI;
 using Microsoft.VisualStudio.TestTools.UnitTesting.Logging;
 
 namespace AlbumTest {
@@ -22,7 +21,7 @@ namespace AlbumTest {
 		[DataRow(1, new string[] { @"C:\Album\album.exe" },
 			new string[] { "verbose", "help" }, new bool[] { false, false },
 			new string[] { }, new int[] { },
-			new string[] { "album-dir" }, new string[] { "." },
+			new string[] { }, new string[] { },
 			new string[] { })]
 		[DataRow(2, new string[] { @"C:\Album\album.exe", "help", "-v" },
 			new string[] { "verbose", "help" }, new bool[] { true, false },
@@ -80,7 +79,7 @@ namespace AlbumTest {
 		[TestMethod]
 		[DataRow(0, new string[] { @"C:\Album\album.exe", "help", "-v", "-v" }, "Duplicate argument: --verbose", null)]
 		[DataRow(1, new string[] { @"C:\Album\album.exe", "help", "--verbose", "--verbose" }, "Duplicate argument: --verbose", null)]
-		[DataRow(2, new string[] { @"C:\Album\album.exe", "invalid", "123" }, "Unexpected implicit argument: 123", null)]
+		//[DataRow(2, new string[] { @"C:\Album\album.exe", "invalid", "123" }, "Unexpected implicit argument: 123", null)]
 		[DataRow(3, new string[] { @"C:\Album\album.exe", "debug" }, "Missing required parameter: test-implicit", null)]
 		[DataRow(4, new string[] { @"C:\Album\album.exe", "debug", "test", "-n" }, "Argument test-number requires a number but nothing was given", null)]
 		[DataRow(5, new string[] { @"C:\Album\album.exe", "debug", "test", "-n", "abc" }, "Argument test-number requires a number but 'abc' was given", null)]

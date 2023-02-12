@@ -1,8 +1,22 @@
 ﻿using AlbumConsole;
-using AlbumLibrary.CLI;
+using AlbumLibrary;
 
 try {
+	// First get info about the current executable and album directory and profile
 	CommandArguments command = CommandArguments.ParseArguments(Environment.GetCommandLineArgs());
+
+	var fileSystem = new NormalFileSystemProvider(command.AlbumDirectory);
+	var errHandler = new ErrorLogHandler();
+	var configReader = new ConfigFileReader(new List<string> { Path.Combine(command.ExecutableDirectory, "config"),
+		Path.Combine(command.AlbumDirectory, "config") });
+
+	// Now use to truly parse arguments
+	Config.CurrentConfig = configReader.ReadConfig(fileSystem, errHandler);
+	Config.CurrentProfile = command.Profile;
+
+	Console.WriteLine("Using profile: {0}\n", Config.CurrentProfile);
+
+	command = CommandArguments.ParseArguments(Environment.GetCommandLineArgs());
 
 	var res = Command.RunCommand(command);
 	if (!res.Success)

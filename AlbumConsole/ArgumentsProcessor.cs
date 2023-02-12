@@ -1,20 +1,20 @@
-﻿using AlbumLibrary.CLI;
-
-namespace AlbumConsole {
+﻿namespace AlbumConsole {
 	/// <summary>
 	/// Class which stores the information about all the command line arguments supplied
 	/// </summary>
 	public class CommandArguments {
 		public string ExecutableDirectory { get; }
 		public string AlbumDirectory { get; }
+		public string Profile { get; }
 		public string Command { get; }
 		public Dictionary<string, IArgument> NamedArguments { get; }
 
-		public CommandArguments(string executableDirectory, string albumDirectory, string command, Dictionary<string, IArgument> named) {
+		public CommandArguments(string executableDirectory, string albumDirectory, string command, Dictionary<string, IArgument> named, string profile) {
 			ExecutableDirectory = executableDirectory;
 			AlbumDirectory = albumDirectory;
 			Command = command;
 			NamedArguments = named;
+			Profile = profile;
 		}
 
 		/// <summary>
@@ -30,31 +30,49 @@ namespace AlbumConsole {
 			if (exeDir == null)
 				throw new ArgumentException("Unexpected error");
 			var albumDir = Path.GetFullPath(".");
+			var profile = "default";
 
 			Dictionary<string, IArgument> parsedArgs;
 			var cmd = args.Length >= 2 ? args[1] : "help";
 			var parameters = AlbumConsole.Command.GetCLIDefinition(cmd);
 
-			try {
-				parsedArgs = args.Length >= 2 ? parameters.GetArguments(args[2..]) : parameters.GetArguments(Array.Empty<string>());
-			} catch (CLIArgumentException e) {
-				if (e.ProcessedArgs.ContainsKey("help") && (e.ProcessedArgs["help"] as FlagArgument)?.IsSet == true)
-					parsedArgs = new Dictionary<string, IArgument> {
+			if (parameters is null) {
+				parsedArgs = new Dictionary<string, IArgument> {
+						{ "help", new FlagArgument(true) },
+						{ "verbose", new FlagArgument(false) },
+						{ "album-dir", new StringArgument(".") },
+						{ "profile", new StringArgument("default") },
+					};
+			} else {
+				try {
+					parsedArgs = args.Length >= 2 ? parameters.GetArguments(args[2..]) : parameters.GetArguments(Array.Empty<string>());
+				} catch (CLIArgumentException e) {
+					if (e.ProcessedArgs.ContainsKey("help") && (e.ProcessedArgs["help"] as FlagArgument)?.IsSet == true)
+						parsedArgs = new Dictionary<string, IArgument> {
 						{ "help", new FlagArgument(true) },
 						{ "verbose", e.ProcessedArgs.ContainsKey("verbose") ?
 							(e.ProcessedArgs["verbose"] as FlagArgument) ?? new FlagArgument(false) :
 							new FlagArgument(false) },
-						{ "album-dir", new StringArgument(".") },
+						{ "album-dir", e.ProcessedArgs.ContainsKey("album-dir") ?
+							(e.ProcessedArgs["album-dir"] as StringArgument) ?? new StringArgument(".") :
+							new StringArgument(".") },
+						{ "profile", e.ProcessedArgs.ContainsKey("profile") ?
+							(e.ProcessedArgs["profile"] as StringArgument) ?? new StringArgument(".") :
+							new StringArgument(".") },
 					};
-				else
-					throw e;
+					else
+						throw e;
+				}
 			}
 
 			if (parsedArgs.ContainsKey("album-dir")) {
 				albumDir = Path.GetFullPath(((StringArgument)parsedArgs["album-dir"]).Value);
 			}
+			if (parsedArgs.ContainsKey("profile")) {
+				profile = ((StringArgument)parsedArgs["profile"]).Value;
+			}
 
-			return new CommandArguments(exeDir, albumDir, cmd, parsedArgs);
+			return new CommandArguments(exeDir, albumDir, cmd, parsedArgs, profile);
 		}
 
 		/// <summary>
