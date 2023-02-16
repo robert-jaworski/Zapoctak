@@ -59,24 +59,45 @@ namespace AlbumConsole {
 
 			var en = new ArgumentIterator(args);
 			var i = 0; // implicit argument index
-			while (en.Valid) {
-				try {
-					if (en.Current.StartsWith("--")) {
-						if (NameMap.TryGetValue(en.Current[2..], out ArgumentDefinition? a)) {
+			try {
+				while (en.Valid) {
+					var arg = en.Current;
+					if (arg.StartsWith("--")) {
+						var invert = arg.StartsWith("--!");
+						var name = invert ? arg[3..] : arg[2..];
+						if (NameMap.TryGetValue(name, out ArgumentDefinition? a)) {
 							if (named.ContainsKey(a.Name))
 								throw new CLIArgumentException($"Duplicate argument: {a.Name}", named);
 							en.MoveNext();
 							named[a.Name] = a.ExtractValue(en);
+							if (invert) {
+								if (named[a.Name] is FlagArgument flag) {
+									named[a.Name] = new FlagArgument(!flag.IsSet);
+								} else
+									throw new CLIArgumentException($"Invert can be only applied to a flag argument: {arg}", named);
+							}
 						} else
 							throw new CLIUnknownArgumentException($"Unknown argument: {en.Current}", named);
-					} else if (en.Current.StartsWith("-")) {
+					} else if (arg.StartsWith("-")) {
 						var curr = en.Current[1..];
 						en.MoveNext();
+						var invert = false;
 						foreach (var ch in curr) {
+							if (ch == '!') {
+								invert = true;
+								continue;
+							}
 							if (ShortNameMap.TryGetValue(ch, out ArgumentDefinition? a)) {
 								if (named.ContainsKey(a.Name))
 									throw new CLIArgumentException($"Duplicate argument: {a.Name}", named);
 								named[a.Name] = a.ExtractValue(en);
+								if (invert) {
+									if (named[a.Name] is FlagArgument flag) {
+										named[a.Name] = new FlagArgument(!flag.IsSet);
+									} else
+										throw new CLIArgumentException($"Invert can be only applied to a flag argument: {arg}", named);
+								}
+								invert = false;
 							} else
 								throw new CLIUnknownArgumentException($"Unknown argument: -{ch}", named);
 						}
@@ -91,16 +112,16 @@ namespace AlbumConsole {
 					} else {
 						throw new CLIArgumentException($"Unexpected implicit argument: {en.Current}", named);
 					}
-				} catch (CLIArgumentExtractValueException e) {
-					throw new CLIArgumentException(e.Message, named);
 				}
-			}
 
-			foreach (var x in NameMap) {
-				if (!named.ContainsKey(x.Key)) {
-					named[x.Key] = x.Value.DefaultValue.ProvideDefault() ??
-						throw new CLIArgumentException($"Missing required parameter: {x.Key}", named);
+				foreach (var x in NameMap) {
+					if (!named.ContainsKey(x.Key)) {
+						named[x.Key] = x.Value.DefaultValue.ProvideDefault() ??
+							throw new CLIArgumentException($"Missing required parameter: {x.Key}", named);
+					}
 				}
+			} catch (CLIArgumentExtractValueException e) {
+				throw new CLIArgumentException(e.Message, named);
 			}
 
 			return named;
@@ -202,7 +223,15 @@ namespace AlbumConsole {
 
 		public string Description { get; }
 
+		protected static Regex AllowedName { get; } = new Regex(@"^[-a-zA-Z0-9]+$");
+		protected static Regex AllowedShortName { get; } = new Regex(@"^[ ?a-zA-Z0-9]$");
+
 		public ArgumentDefinition(string name, char shortName, CLIArgumentType type, IDefaultValueProvider defaultValue, bool isImplicit) {
+			if (!AllowedName.IsMatch(name))
+				throw new CLIDefinitionException($"Invalid argument name: {name}");
+			if (!AllowedShortName.IsMatch(shortName.ToString()))
+				throw new CLIDefinitionException($"Invalid argument short name: {shortName}");
+
 			Name = name;
 			ShortName = shortName;
 			Type = type;
@@ -239,15 +268,23 @@ namespace AlbumConsole {
 		/// <returns></returns>
 		/// <exception cref="CLIArgumentExtractValueException"></exception>
 		/// <exception cref="NotImplementedException"></exception>
-		internal static IArgument ExtractValue(CLIArgumentType type, string name, ArgumentIterator en) {
+		internal static IArgument ExtractValue(CLIArgumentType type, string name, ArgumentIterator en, bool flagReqBool = false) {
 			switch (type) {
 			case CLIArgumentType.Flag:
+				if (flagReqBool) {
+					if (!en.Valid)
+						throw new CLIArgumentExtractValueException($"Argument {name} requires a boolean but nothing was given");
+					if (bool.TryParse(en.Current, out bool f)) {
+						en.MoveNext();
+						return new FlagArgument(f);
+					}
+					throw new CLIArgumentExtractValueException($"Argument {name} requires a boolean but '{en.Current}' was given");
+				}
 				return new FlagArgument(true);
 			case CLIArgumentType.Number:
 				if (!en.Valid)
 					throw new CLIArgumentExtractValueException($"Argument {name} requires a number but nothing was given");
-				int x;
-				if (int.TryParse(en.Current, out x)) {
+				if (int.TryParse(en.Current, out int x)) {
 					en.MoveNext();
 					return new NumberArgument(x);
 				}

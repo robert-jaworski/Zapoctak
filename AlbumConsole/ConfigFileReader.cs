@@ -4,6 +4,8 @@ using System.Text.RegularExpressions;
 namespace AlbumConsole {
 	public interface IConfig {
 		IArgument? ProvideDefault(string command, string profile, string argument, CLIArgumentType argType);
+
+		IEnumerable<string> GetProfiles();
 	}
 
 	public interface IConfigFileReader {
@@ -30,24 +32,38 @@ namespace AlbumConsole {
 		}
 
 		public IArgument? ProvideDefault(string command, string profile, string argument, CLIArgumentType argType) {
-			IArgument? output = null;
-			if (Profiles.ContainsKey(profile))
-				output ??= Profiles[profile].ProvideDefault(command, argument, argType);
-			if (Profiles.ContainsKey("default"))
-				output ??= Profiles["default"].ProvideDefault(command, argument, argType);
-			if (FallbackConfig is not null)
-				output ??= FallbackConfig.ProvideDefault(command, profile, argument, argType);
-			return output;
+			try {
+				IArgument? output = null;
+				if (Profiles.ContainsKey(profile))
+					output ??= Profiles[profile].ProvideDefault(command, argument, argType);
+				if (Profiles.ContainsKey("default"))
+					output ??= Profiles["default"].ProvideDefault(command, argument, argType);
+				if (FallbackConfig is not null)
+					output ??= FallbackConfig.ProvideDefault(command, profile, argument, argType);
+				return output;
+			} catch (CLIArgumentExtractValueException e) {
+				throw new CLIArgumentExtractValueException("Config error: " + e.Message);
+			}
 		}
 
 		public void Print() {
 			Console.WriteLine("Start of config");
 			foreach (var (k, v) in Profiles) {
-				Console.WriteLine("Profile {0}:", k);
+				Console.WriteLine("  Profile {0}:", k);
 				v.Print();
 			}
 			FallbackConfig?.Print();
 			Console.WriteLine("End of config");
+		}
+
+		public void Print(string profile) {
+			if (Profiles.ContainsKey(profile))
+				Profiles[profile].Print();
+			FallbackConfig?.Print(profile);
+		}
+
+		public IEnumerable<string> GetProfiles() {
+			return FallbackConfig is null ? Profiles.Keys : FallbackConfig.GetProfiles().Union(Profiles.Keys);
 		}
 	}
 
@@ -78,13 +94,13 @@ namespace AlbumConsole {
 			if (CommandDefaults.ContainsKey(command))
 				output ??= CommandDefaults[command].ProvideDefault(argument, argType);
 			if (Defaults.ContainsKey(argument))
-				output ??= ArgumentDefinition.ExtractValue(argType, argument, new ArgumentIterator(Defaults[argument]));
+				output ??= ArgumentDefinition.ExtractValue(argType, argument, new ArgumentIterator(Defaults[argument]), true);
 			return output;
 		}
 
 		public void Print() {
 			foreach (var (k, v) in Defaults) {
-				Console.WriteLine("{0} -> {1}", k, string.Join(' ', v));
+				Console.WriteLine("    {0} -> {1}", k, string.Join(' ', v));
 			}
 			foreach (var (k, v) in CommandDefaults) {
 				v.Print(k);	
@@ -108,13 +124,13 @@ namespace AlbumConsole {
 
 		public IArgument? ProvideDefault(string argument, CLIArgumentType argType) {
 			if (Defaults.ContainsKey(argument))
-				return ArgumentDefinition.ExtractValue(argType, argument, new ArgumentIterator(Defaults[argument]));
+				return ArgumentDefinition.ExtractValue(argType, argument, new ArgumentIterator(Defaults[argument]), true);
 			return null;
 		}
 
 		public void Print(string cmd) {
 			foreach (var (k, v) in Defaults) {
-				Console.WriteLine("({2}) {0} -> {1}", k, string.Join(' ', v), cmd);
+				Console.WriteLine("    ({2}) {0} -> {1}", k, string.Join(' ', v), cmd);
 			}
 		}
 	}
@@ -163,7 +179,7 @@ namespace AlbumConsole {
 							profile = new ConfigProfile();
 							section = s;
 							sectionStart = lineCount;
-						} else {
+						} else if (profile is not null) {
 							errorHandler.Error($"Duplicate config section (line {lineCount}): {section}");
 						}
 						continue;
