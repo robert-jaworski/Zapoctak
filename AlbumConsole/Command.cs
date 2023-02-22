@@ -18,6 +18,7 @@ namespace AlbumConsole {
 				new ArgsDef("command", 'c', CLIArgumentType.String, new StringArgument(""), true),
 				new ArgsDef("help-config", 'g', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("all-commands", 'a', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("list-profiles", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Help) },
 			{ "debug", new Command("debug", "For debugging arguments parsing", new List<ArgsDef> {
 				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
@@ -375,6 +376,8 @@ namespace AlbumConsole {
 			var cmd = args.GetArgument<StringArgument>("command").Value;
 			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
 
+			var didSomething = false;
+
 			if (args.IsSet("help-config")) {
 				var fileSystem = new NormalFileSystemProvider(args.AlbumDirectory);
 				var path = fileSystem.GetFullPathAlbum("config");
@@ -383,24 +386,47 @@ namespace AlbumConsole {
 				file.WriteLine("; This is a comment.");
 				file.WriteLine("[default] ; This defines a profile named 'default', which is always active");
 				file.WriteLine("; We can set the verbose flag to be always set and set the default extensions:");
-				file.WriteLine("--verbose = ");
+				file.WriteLine("--verbose = true");
 				file.WriteLine("--extensions = .jpg,.png");
 				file.WriteLine("; We can also specify the default to apply to only certain commands:");
 				file.WriteLine("import--files = ./...");
 				file.WriteLine("\n[last] ; Let's define another profile");
 				file.WriteLine("--files = @last");
-				file.WriteLine("--long-names = ");
+				file.WriteLine("--long-names = True");
 				file.WriteLine("\n[myphotos] ; And another");
 				file.WriteLine("--template = 'My Photos/{YYYY}{MM}{DD}-{hh}{mm}{ss}'");
 
 				Console.WriteLine("Dummy config saved to: {0}", path);
-			} else if (args.IsSet("all-commands")) {
+				didSomething = true;
+			}
+			if (args.IsSet("all-commands")) {
 				Console.WriteLine("Here is a list of available commands:\n");
 				foreach (var kv in Command.Commands) {
 					if (kv.Key != "debug" && kv.Key != "interactive")
 						Console.WriteLine(kv.Value.GetFullDescription());
 				}
-			} else if (string.IsNullOrEmpty(cmd)) {
+				didSomething = true;
+			}
+			if (args.IsSet("list-profiles")) {
+				if (Config.CurrentConfig is null)
+					return new CommandResult(false, "No config loaded");
+				Console.WriteLine("Available config profiles:");
+				var config = Config.CurrentConfig as Config;
+				foreach (var p in Config.CurrentConfig.GetProfiles()) {
+					Console.WriteLine("  " + p);
+					if (verbose) {
+						config?.Print(p);
+					}
+				}
+				didSomething = true;
+			}
+			if (!string.IsNullOrEmpty(cmd)) {
+				if (!Command.Commands.ContainsKey(cmd))
+					return new CommandResult(false, $"There is no such command: {cmd}");
+				Console.WriteLine(Command.Commands[cmd].GetFullDescription());
+				didSomething = true;
+			}
+			if (!didSomething) {
 				Console.WriteLine("You can use several commands to import, change, delete, export and backup files in the album.");
 				Console.WriteLine("The album is a directory which can contain several subdirectories and files, usually photos.");
 				Console.WriteLine();
@@ -451,11 +477,6 @@ namespace AlbumConsole {
 				Console.WriteLine("Run `help -g` to create a dummy config file.");
 				Console.WriteLine("Run `help -a` to list all commands.");
 				Console.WriteLine("Use 'help {command}' or 'command -?' to learn more about specific commands");
-
-			} else {
-				if (!Command.Commands.ContainsKey(cmd))
-					return new CommandResult(false, $"There is no such command: {cmd}");
-				Console.WriteLine(Command.Commands[cmd].GetFullDescription());
 			}
 
 			return new CommandResult(true);
