@@ -36,11 +36,11 @@ namespace AlbumTest {
 
 			var importListProvider = new ImportListProvider(new TestFileInfoProvider(), fileNameProvider);
 
-			var paths = importFilePathProvider.GetFilePaths(fileSystem, errHandler).ToList();
+			var paths = importFilePathProvider.GetFilePaths(fileSystem, errHandler, new NoLogger()).ToList();
 
 			var fileImporter = new FileCopyImporter(fileSystem, new SuffixDuplicateResolver(), "import");
 
-			var importItems = importListProvider.GetImportItems(fileSystem, paths, errHandler);
+			var importItems = importListProvider.GetImportItems(fileSystem, paths, errHandler, new NoLogger());
 
 			var imported = fileImporter.ImportItems(importItems, errHandler, new NoLogger());
 			var expected = expectedSources.Zip(expectedDestinations);

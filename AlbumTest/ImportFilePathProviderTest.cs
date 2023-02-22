@@ -119,7 +119,7 @@ namespace AlbumTest {
 			Assert.IsNotNull(res);
 
 			var sys = new TestFileSystemProvider(dir, DummyFiles);
-			var files = res.GetFilePaths(sys, new ErrorTestFailHandler()).ToList();
+			var files = res.GetFilePaths(sys, new ErrorTestFailHandler(), new NoLogger()).ToList();
 			Assert.AreEqual(expected.Length, files.Count);
 			for (var i = 0; i < expected.Length; i++) {
 				Assert.AreEqual(expected[i].Replace('\\', Path.DirectorySeparatorChar), files[i]);	

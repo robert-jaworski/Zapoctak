@@ -13,7 +13,7 @@ namespace AlbumLibrary {
 		/// </summary>
 		/// <param name="fullPath">The full path to the file.</param>
 		/// <param name="fileSystem"></param>
-		/// <returns><see cref="FileInfo"/> containing information</returns>
+		/// <returns><see cref="FileInfo"/> containing information about the selected file</returns>
 		public FileInfo GetInfo(string fullPath, IFileSystemProvider fileSystem);
 	}
 
@@ -92,11 +92,11 @@ namespace AlbumLibrary {
 		/// </summary>
 		public string? DeviceName { get; }
 
-		public FileInfo(string path, DateTime? exifDateTime, DateTime fileCreation, DateTime fileModification, string? manufacturer, string? model,
+		public FileInfo(string fullPath, DateTime? exifDateTime, DateTime fileCreation, DateTime fileModification, string? manufacturer, string? model,
 			string? originalFileRelativePath) {
-			OriginalFileName = Path.GetFileNameWithoutExtension(path);
-			OriginalFileExtension = Path.GetExtension(path);
-			OriginalFilePath = path;
+			OriginalFileName = Path.GetFileNameWithoutExtension(fullPath);
+			OriginalFileExtension = Path.GetExtension(fullPath);
+			OriginalFilePath = fullPath;
 			TrueEXIFDateTime = exifDateTime;
 			TrueFileCreation = fileCreation;
 			TrueFileModification = fileModification;
@@ -106,9 +106,9 @@ namespace AlbumLibrary {
 			OriginalFileRelativePath = originalFileRelativePath;
 		}
 
-		public FileInfo(string path, DateTime fileCreation, DateTime? exifDateTime = null, string? manufacturer = null, string? model = null,
+		public FileInfo(string fullPath, DateTime fileCreation, DateTime? exifDateTime = null, string? manufacturer = null, string? model = null,
 			string? originalFileRelativePath = null) :
-			this(path, exifDateTime, fileCreation, fileCreation, manufacturer, model, originalFileRelativePath) { }
+			this(fullPath, exifDateTime, fileCreation, fileCreation, manufacturer, model, originalFileRelativePath) { }
 
 		public FileInfo(FileInfo fileInfo, string? originalFileRelativePath) {
 			OriginalFileName = fileInfo.OriginalFileName;
@@ -122,13 +122,41 @@ namespace AlbumLibrary {
 			DeviceName = fileInfo.DeviceName;
 			OriginalFileRelativePath = originalFileRelativePath;
 		}
+
+		public string ToSavableString() {
+			return $"{TrueEXIFDateTime:o} {TrueFileCreation:o} {TrueFileModification:o}\n{Manufacturer}\n{Model}";
+		}
+
+		public static FileInfo? ReadFromStream(string fullPath, string relativePath, StreamReader stream) {
+			try {
+				var datesStr = stream.ReadLine()?.Split(' ').ToArray();
+				if (datesStr is null)
+					return null;
+
+				DateTime? exif = string.IsNullOrEmpty(datesStr[0]) ? null : DateTime.Parse(datesStr[0]);
+				var dates = datesStr[1..].Select(DateTime.Parse).ToList();
+				var manufacturer = stream.ReadLine();
+				var model = stream.ReadLine();
+				return new FileInfo(fullPath, exif, dates[0], dates[1], manufacturer, model, relativePath);
+			} catch {
+				return null;
+			}
+		}
 	}
 
 	/// <summary>
 	/// Reads the EXIF information of the file (if it has one).
 	/// </summary>
 	public class EXIFFileInfoProvider : IFileInfoProvider {
-		public FileInfo GetInfo(string fullPath, IFileSystemProvider fileSystem) {
+		public FileInfo GetInfo(string fullPath, IFileSystemProvider fileSystem) => GetFileInfo(fullPath, fileSystem);
+
+		public static FileInfo GetFileInfo(string fullPath, IFileSystemProvider fileSystem) {
+			if (fileSystem is IndexingFileSystemProvider f) {
+				var info = f.Index.GetFileInfo(f.GetRelativePath(f.GetAlbumDirectory(), fullPath));
+				if (info is not null)
+					return info;
+			}
+
 			var fileCreation = fileSystem.GetFileCreation(fullPath);
 			var fileModification = fileSystem.GetFileModification(fullPath);
 
@@ -160,29 +188,10 @@ namespace AlbumLibrary {
 	/// </summary>
 	public class NoEXIFDateFileInfoProvider : IFileInfoProvider {
 		public FileInfo GetInfo(string fullPath, IFileSystemProvider fileSystem) {
-			var fileCreation = fileSystem.GetFileCreation(fullPath);
-			var fileModification = fileSystem.GetFileModification(fullPath);
+			var info = EXIFFileInfoProvider.GetFileInfo(fullPath, fileSystem);
 
-			// This code uses the following library: https://drewnoakes.com/code/exif/
-
-			var directories = fileSystem.GetFileInfo(fullPath);
-			var subIfdDirectory = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
-			var ifd0Directory = directories.OfType<ExifIfd0Directory>().FirstOrDefault();
-
-			DateTime? exifDT = null;
-			try {
-				exifDT = subIfdDirectory?.GetDateTime(ExifDirectoryBase.TagDateTimeOriginal);
-			} catch (MetadataException) { }
-			if (exifDT is null) {
-				try {
-					exifDT = ifd0Directory?.GetDateTime(ExifDirectoryBase.TagDateTime);
-				} catch (MetadataException) { }
-			}
-
-			var make = ifd0Directory?.GetDescription(ExifDirectoryBase.TagMake);
-			var model = ifd0Directory?.GetDescription(ExifDirectoryBase.TagModel);
-
-			return new FileInfo(fullPath, null, fileCreation, fileModification, make, model, null);
+			return new FileInfo(fullPath, info.TrueEXIFDateTime, info.TrueFileCreation, info.TrueFileModification, info.Manufacturer, info.Model,
+				info.OriginalFileRelativePath);
 		}
 	}
 

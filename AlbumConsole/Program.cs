@@ -24,19 +24,23 @@ try {
 	res.Messages.ForEach(x => Console.WriteLine(x));
 	return res.Success ? 0 : 1;
 } catch (CLIArgumentException e) {
-	Console.Error.WriteLine("Invalid arguments:");
-	Console.Error.WriteLine(e.Message);
+	Console.WriteLine("Invalid arguments:");
+	Console.WriteLine(e.Message);
+	// Console.Error.WriteLine(e);
 	return 2;
 } catch (InternalException e) {
-	Console.Error.WriteLine("An unexpected internal error:");
-	Console.Error.WriteLine(e.Message);
+	Console.WriteLine("An unexpected internal error:");
+	Console.WriteLine(e.Message);
+	// Console.Error.WriteLine(e);
 	return 3;
 } catch (NotImplementedException e) {
-	Console.Error.WriteLine("Not implemented:");
-	Console.Error.WriteLine(e.Message);
+	Console.WriteLine("Not implemented:");
+	Console.WriteLine(e.Message);
+	// Console.Error.WriteLine(e);
 	return 4;
 } catch (Exception e) {
-	Console.Error.WriteLine("An unexpected error:");
-	Console.Error.WriteLine(e);
+	Console.WriteLine("An unexpected error:");
+	Console.WriteLine(e.Message);
+	// Console.Error.WriteLine(e);
 	return 15;
 }

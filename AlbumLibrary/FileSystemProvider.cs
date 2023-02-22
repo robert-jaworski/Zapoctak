@@ -257,9 +257,6 @@ namespace AlbumLibrary {
 			if (!DirectoryExists(TrashDirectory)) {
 				CreateDirectory(TrashDirectory);
 			}
-			SetFileAttributes(UndoFilePath, FileAttributes.Hidden | GetFileAttributes(UndoFilePath));
-			SetFileAttributes(RedoFilePath, FileAttributes.Hidden | GetFileAttributes(RedoFilePath));
-			SetFileAttributes(TrashDirectory, FileAttributes.Hidden | GetFileAttributes(TrashDirectory));
 		}
 
 		public UndoFileSystemProvider(IFileSystemProvider fileSystem, string metaDirectory) :
@@ -276,7 +273,7 @@ namespace AlbumLibrary {
 		protected void CloseUndoFile() {
 			if (UndoFile is null)
 				throw new InvalidOperationException();
-			UndoFile.Dispose();
+			UndoFile.Close();
 			UndoFile = null;
 		}
 
@@ -378,6 +375,8 @@ namespace AlbumLibrary {
 		}
 
 		public TextWriter WriteText(string fullPath, bool append = false) {
+			if (!append && FileSystem.FileExists(fullPath))
+				FileSystem.DeleteFile(fullPath);
 			return FileSystem.WriteText(fullPath, append);
 		}
 
@@ -489,58 +488,60 @@ namespace AlbumLibrary {
 			if (UndoFile is not null)
 				throw new InvalidOperationException();
 
-			var transactions = ReadUndoFile().ToList();
-			if (transactions.Count == 0)
+			try {
+				var transactions = ReadUndoFile().ToList();
+				if (transactions.Count == 0)
+					return null;
+
+				UndoFile = WriteText(RedoFilePath, append: true);
+				Operation("Transaction", "{0} {1:o}", false, DateTime.Now);
+				Operation("Info", "undo");
+				transactions[^1].Undo(this, logger);
+				UndoFile.WriteLine();
+				UndoFile.Close();
+				UndoFile = null;
+
+				var file = WriteText(UndoFilePath, append: false);
+				foreach (var t in transactions.Take(transactions.Count - 1)) {
+					t.WriteToStream(file);
+				}
+
+				file.Close();
+
+				return transactions[^1];
+			} catch {
 				return null;
-
-			UndoFile = WriteText(RedoFilePath, append: true);
-			Operation("Transaction", "{0} {1:o}", false, DateTime.Now);
-			Operation("Info", "undo");
-			transactions[^1].Undo(this, logger);
-			UndoFile.WriteLine();
-			UndoFile.Dispose();
-			UndoFile = null;
-
-			FileSystem.DeleteFile(UndoFilePath);
-			var file = WriteText(UndoFilePath, append: false);
-			foreach (var t in transactions.Take(transactions.Count - 1)) {
-				t.WriteToStream(file);
 			}
-
-			file.Close();
-			file.Dispose();
-			SetFileAttributes(UndoFilePath, FileAttributes.Hidden | GetFileAttributes(UndoFilePath));
-
-			return transactions[^1];
 		}
 
 		public FileSystemTransaction? Redo(ILogger logger) {
 			if (UndoFile is not null)
 				throw new InvalidOperationException();
 
-			var transactions = ReadUndoFile(true).ToList();
-			if (transactions.Count == 0)
+			try {
+				var transactions = ReadUndoFile(true).ToList();
+				if (transactions.Count == 0)
+					return null;
+
+				UndoFile = WriteText(UndoFilePath, append: true);
+				Operation("Transaction", "{0} {1:o}", false, DateTime.Now);
+				Operation("Info", "redo");
+				transactions[^1].Undo(this, logger);
+				UndoFile.WriteLine();
+				UndoFile.Close();
+				UndoFile = null;
+
+				var file = WriteText(RedoFilePath, append: false);
+				foreach (var t in transactions.Take(transactions.Count - 1)) {
+					t.WriteToStream(file);
+				}
+
+				file.Close();
+
+				return transactions[^1];
+			} catch {
 				return null;
-
-			UndoFile = WriteText(UndoFilePath, append: true);
-			Operation("Transaction", "{0} {1:o}", false, DateTime.Now);
-			Operation("Info", "redo");
-			transactions[^1].Undo(this, logger);
-			UndoFile.WriteLine();
-			UndoFile.Dispose();
-			UndoFile = null;
-
-			FileSystem.DeleteFile(RedoFilePath);
-			var file = WriteText(RedoFilePath, append: false);
-			foreach (var t in transactions.Take(transactions.Count - 1)) {
-				t.WriteToStream(file);
 			}
-
-			file.Close();
-			file.Dispose();
-			SetFileAttributes(RedoFilePath, FileAttributes.Hidden | GetFileAttributes(RedoFilePath));
-
-			return transactions[^1];
 		}
 
 		public IEnumerable<FileSystemTransaction> ReadUndoFile(bool redoFileInstead = false) {

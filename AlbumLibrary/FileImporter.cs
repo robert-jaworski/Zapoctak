@@ -61,6 +61,7 @@
 					} catch (Exception e) {
 						logger.WriteLine("\t:  Error!");
 						errorHandler.Error(e.Message);
+						// Console.Error.WriteLine(e);
 					}
 				}
 			}
@@ -117,6 +118,7 @@
 					} catch (Exception e) {
 						logger.WriteLine("\t:  Error!");
 						errorHandler.Error(e.Message);
+						// Console.Error.WriteLine(e);
 					}
 				}
 			}
@@ -159,6 +161,7 @@
 						} catch (Exception e) {
 							logger.WriteLine("\t:  Error!");
 							errorHandler.Error(e.Message);
+							// Console.Error.WriteLine(e);
 						}
 					}
 				}
@@ -212,6 +215,7 @@
 					} catch (Exception e) {
 						logger.WriteLine("\t:  Error!");
 						errorHandler.Error(e.Message);
+						// Console.Error.WriteLine(e);
 					}
 				}
 			}
@@ -251,6 +255,7 @@
 					} catch (Exception e) {
 						logger.WriteLine("\t:  Error!");
 						errorHandler.Error(e.Message);
+						// Console.Error.WriteLine(e);
 					}
 				}
 			}

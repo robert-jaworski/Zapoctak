@@ -11,18 +11,18 @@
 		/// <param name="importFilePaths">the file paths</param>
 		/// <param name="errorHandler"></param>
 		/// <returns>The list of <see cref="ImportItem"/> to process</returns>
-		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler);
+		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler, ILogger logger);
 
-		public ImportList GetImportList(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler) {
-			return new ImportList(GetImportItems(fileSystem, importFilePaths, errorHandler));
+		public ImportList GetImportList(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler, ILogger logger) {
+			return new ImportList(GetImportItems(fileSystem, importFilePaths, errorHandler, logger));
 		}
 
-		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider, IErrorHandler errorHandler) {
-			return GetImportItems(fileSystem, importFilePathProvider.GetFilePaths(fileSystem, errorHandler), errorHandler);
+		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider, IErrorHandler errorHandler, ILogger logger) {
+			return GetImportItems(fileSystem, importFilePathProvider.GetFilePaths(fileSystem, errorHandler, logger), errorHandler, logger);
 		}
 
-		public ImportList GetImportList(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider, IErrorHandler errorHandler) {
-			return new ImportList(GetImportItems(fileSystem, importFilePathProvider, errorHandler));
+		public ImportList GetImportList(IFileSystemProvider fileSystem, IImportFilePathProvider importFilePathProvider, IErrorHandler errorHandler, ILogger logger) {
+			return new ImportList(GetImportItems(fileSystem, importFilePathProvider, errorHandler, logger));
 		}
 	}
 
@@ -39,7 +39,7 @@
 			FileNameProvider = fileNameProvider;
 		}
 
-		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler) {
+		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler, ILogger logger) {
 			foreach (var file in importFilePaths) {
 				var info = FileInfoProvider.GetInfo(file, fileSystem);
 				ImportItem? val = null;
@@ -50,6 +50,7 @@
 					val = new ImportItem(info, null);
 				} catch (InvalidFileNameTemplateException e) {
 					errorHandler.Error(e.Message);
+					// Console.Error.WriteLine(e);
 				}
 				if (val is not null)
 					yield return val;

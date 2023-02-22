@@ -1,6 +1,4 @@
-﻿using static System.Net.Mime.MediaTypeNames;
-
-namespace AlbumLibrary {
+﻿namespace AlbumLibrary {
 	/// <summary>
 	/// An interface for providing the paths of files to process.
 	/// </summary>
@@ -11,7 +9,7 @@ namespace AlbumLibrary {
 		/// <param name="fileSystem"></param>
 		/// <param name="errorHandler"></param>
 		/// <returns></returns>
-		IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler);
+		IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, ILogger logger);
 	}
 
 	/// <summary>
@@ -113,9 +111,9 @@ namespace AlbumLibrary {
 			return new ImportFilePathProvider(fileProviders, allowedExtensions);
 		}
 
-		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, ILogger logger) {
 			return from p in FileProviders
-				   select p.GetFilePaths(fileSystem, errorHandler, AllowedExtensions) into files
+				   select p.GetFilePaths(fileSystem, errorHandler, AllowedExtensions, logger) into files
 				   from f in files
 				   select fileSystem.GetFullPath(f);
 		}
@@ -136,7 +134,7 @@ namespace AlbumLibrary {
 	/// A simpler version of <see cref="IImportFilePathProvider"/> which accepts an additional parameter determining the acceptable file extensions.
 	/// </summary>
 	public interface IFilePathProvider {
-		IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions);
+		IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions, ILogger logger);
 	}
 
 	/// <summary>
@@ -151,7 +149,7 @@ namespace AlbumLibrary {
 			AllDrives = allDrives;
 		}
 
-		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions, ILogger logger) {
 			var fullPath = fileSystem.GetFullPath(FilePath);
 			if (AllDrives) {
 				var ext = Path.GetExtension(fullPath);
@@ -203,7 +201,7 @@ namespace AlbumLibrary {
 			AllDrives = allDrives;
 		}
 
-		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions, ILogger logger) {
 			var paths = new Stack<string>();
 			if (AllDrives) {
 				foreach (var p in ImportFilePathProvider.GoThroughAllDrives(DirectoryPath, fileSystem).Reverse()) {
@@ -216,6 +214,7 @@ namespace AlbumLibrary {
 			while (paths.Count > 0) {
 				var p = paths.Pop();
 				if (fileSystem.DirectoryExists(p)) {
+					logger.WriteLine($"Entering directory: {logger.GetSuitablePath(p, fileSystem)}");
 					int files = 0, dirs = 0;
 					foreach (var file in fileSystem.EnumerateFiles(p)) {
 						if (Path.GetFileName(file).StartsWith('.'))
@@ -263,7 +262,7 @@ namespace AlbumLibrary {
 			AllDrives = allDrives;
 		}
 
-		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions, ILogger logger) {
 			if (AllDrives) {
 				var files = 0;
 				foreach (var path in ImportFilePathProvider.GoThroughAllDrives(DirectoryPath, fileSystem)) {
@@ -325,7 +324,7 @@ namespace AlbumLibrary {
 			LastCount = lastCount;
 		}
 
-		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions) {
+		public IEnumerable<string> GetFilePaths(IFileSystemProvider fileSystem, IErrorHandler errorHandler, HashSet<string> allowedExtensions, ILogger logger) {
 			var transactions = fileSystem.ReadUndoFile().ToList();
 			var files = 0;
 			var included = new HashSet<string>();

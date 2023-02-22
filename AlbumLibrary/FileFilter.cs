@@ -1,6 +1,4 @@
-﻿using Sharpen;
-
-namespace AlbumLibrary {
+﻿namespace AlbumLibrary {
 	/// <summary>
 	/// An interface which decides whether a file should be processed given its <see cref="FileInfo"/>.
 	/// It can also modify the info, see <see cref="TimeShiftFilter"/>.
@@ -112,7 +110,7 @@ namespace AlbumLibrary {
 			FileNameProvider = fileNameProvider;
 		}
 
-		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler) {
+		public IEnumerable<ImportItem> GetImportItems(IFileSystemProvider fileSystem, IEnumerable<string> importFilePaths, IErrorHandler errorHandler, ILogger logger) {
 			foreach (var file in importFilePaths) {
 				var info = FileInfoProvider.GetInfo(file, fileSystem);
 				var ignore = false;
@@ -136,6 +134,7 @@ namespace AlbumLibrary {
 					val = new ImportItem(info, null);
 				} catch (InvalidFileNameTemplateException e) {
 					errorHandler.Error(e.Message);
+					// Console.Error.WriteLine(e);
 				}
 				if (val is not null)
 					yield return val;

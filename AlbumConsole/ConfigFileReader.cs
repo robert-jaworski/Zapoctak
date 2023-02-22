@@ -19,6 +19,8 @@ namespace AlbumConsole {
 		public static IConfig? CurrentConfig { get; set; }
 		public static string CurrentProfile { get; set; } = "default";
 
+		public static bool DebugOutput { get; set; } = false;
+
 		public Config(Config? fallbackConfig = null) {
 			Profiles = new();
 			FallbackConfig = fallbackConfig;
@@ -42,6 +44,7 @@ namespace AlbumConsole {
 					output ??= FallbackConfig.ProvideDefault(command, profile, argument, argType);
 				return output;
 			} catch (CLIArgumentExtractValueException e) {
+				Console.Error.WriteLine(e);
 				throw new CLIArgumentExtractValueException("Config error: " + e.Message);
 			}
 		}

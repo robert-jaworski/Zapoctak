@@ -52,6 +52,7 @@ namespace AlbumConsole {
 				new ArgsDef("files", 'f', CLIArgumentType.Files, null, true),
 				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
 				new ArgsDef("count", 'c', CLIArgumentType.Number, new NumberArgument(-1), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Metadata) },
 			{ "import", new Command("import", "Imports specified files into the album.",
 				new List<ArgsDef> {
@@ -65,8 +66,9 @@ namespace AlbumConsole {
 				new ArgsDef("time-shift", 's', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'j', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("use-index", 'i', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
@@ -87,7 +89,8 @@ namespace AlbumConsole {
 				new ArgsDef("template", 't', CLIArgumentType.String, new StringArgument(@"{file:name}"), false),
 				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'j', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("use-index", 'i', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
@@ -106,8 +109,9 @@ namespace AlbumConsole {
 				new ArgsDef("time-shift", 's', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'j', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("hash-duplicates", 'h', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("use-index", 'i', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
@@ -127,7 +131,8 @@ namespace AlbumConsole {
 				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
 				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'j', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("use-index", 'i', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
@@ -145,7 +150,8 @@ namespace AlbumConsole {
 				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
 				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
 				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
-				new ArgsDef("filter", 'i', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'j', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("use-index", 'i', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
@@ -171,6 +177,7 @@ namespace AlbumConsole {
 				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
 				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("use-index", 'i', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Undo) },
 			{ "redo", new Command("redo", "Redo last undone operation.",
@@ -179,8 +186,26 @@ namespace AlbumConsole {
 				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
 				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("use-index", 'i', CLIArgumentType.Flag, new FlagArgument(false), false),
 				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
 			}, DefaultCommandsActions.Redo) },
+			{ "index", new Command("index", "Loads information about specified files and saves it to the index file.",
+				new List<ArgsDef> {
+				new ArgsDef("verbose", 'v', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("help", '?', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("album-dir", 'd', CLIArgumentType.String, new StringArgument("."), false),
+				new ArgsDef("profile", 'p', CLIArgumentType.String, new StringArgument("default"), false),
+				new ArgsDef("clear-index", 'c', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("files", 'f', CLIArgumentType.Files, new FilesArgument(), true),
+				new ArgsDef("extensions", 'x', CLIArgumentType.String, new StringArgument(@".jpg"), false),
+				new ArgsDef("after-date", 'a', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("before-date", 'b', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("filter", 'j', CLIArgumentType.String, new StringArgument(""), false),
+				new ArgsDef("yes", 'y', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("no", 'n', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("long-names", 'l', CLIArgumentType.Flag, new FlagArgument(false), false),
+				new ArgsDef("use-exif-date", ' ', CLIArgumentType.Flag, new FlagArgument(false), false),
+			}, DefaultCommandsActions.UpdateIndex) },
 		};
 
 		public string Name { get; }
@@ -528,6 +553,7 @@ namespace AlbumConsole {
 							$"Successfully ran {counter} command" + (counter == 1 ? "" : "s")
 						});
 					Console.WriteLine($"Error: {e.Message}");
+					// Console.Error.WriteLine(e);
 					continue;
 				}
 
@@ -559,6 +585,9 @@ namespace AlbumConsole {
 		}
 
 		public static CommandResult Metadata(CommandArguments args) {
+			var verbose = args.IsSet("verbose");
+			var longNames = args.IsSet("long-names");
+
 			var errHandler = new ErrorListHandler();
 			var files = ImportFilePathProvider.Process(args.GetArgument<FilesArgument>("files").Files, GetExtensions(args), errHandler);
 			if (errHandler.IsError)
@@ -566,12 +595,11 @@ namespace AlbumConsole {
 
 			var fs = new NormalFileSystemProvider(".");
 
-			var verbose = args.GetArgument<FlagArgument>("verbose").IsSet;
 			var maxCount = args.GetArgument<NumberArgument>("count").Value;
 			var count = 0;
 
 			if (verbose) {
-				foreach (var file in files.GetFilePaths(fs, errHandler)) {
+				foreach (var file in files.GetFilePaths(fs, errHandler, new ConsoleLogger(longNames))) {
 					if (count++ == maxCount)
 						break;
 					Console.WriteLine($"{file}:");
@@ -590,7 +618,7 @@ namespace AlbumConsole {
 					Console.WriteLine();
 				}
 			} else {
-				foreach (var file in files.GetFilePaths(fs, errHandler)) {
+				foreach (var file in files.GetFilePaths(fs, errHandler, new ConsoleLogger(longNames))) {
 					if (count++ == maxCount)
 						break;
 					Console.WriteLine($"{file}:");
@@ -649,6 +677,7 @@ namespace AlbumConsole {
 					try {
 						fileFilters.Add(new TemplateFilter(template));
 					} catch (InvalidFileNameTemplateException e) {
+						// Console.Error.WriteLine(e);
 						return new CommandResult(false, new List<string> { "Invalid filter template!", e.Message });
 					}
 				}
@@ -687,6 +716,15 @@ namespace AlbumConsole {
 					fileSystemProvider = new UndoFileSystemProvider(fileSystemProvider, secondaryDir);
 				else
 					fileSystemProvider = new UndoFileSystemProvider(fileSystemProvider);
+			}
+			if (args.IsSet("use-index")) {
+				var res = GetFileInfoProvider(args, out IFileInfoProvider fileInfoProvider);
+				if (res is not null)
+					return res;
+				if (secondaryDir is not null)
+					fileSystemProvider = new IndexingFileSystemProvider(fileSystemProvider, fileInfoProvider, metaDirectory: secondaryDir);
+				else
+					fileSystemProvider = new IndexingFileSystemProvider(fileSystemProvider, fileInfoProvider);
 			}
 			return null;
 		}
@@ -760,6 +798,7 @@ namespace AlbumConsole {
 					fileNameProvider = TemplateFileNameProvider.MultipleTemplates(args.GetArgument<StringArgument>("template").Value.Split(','));
 				} catch (InvalidFileNameTemplateException e) {
 					importItems = new List<ImportItem>();
+					// Console.Error.WriteLine(e);
 					return new CommandResult(false, new List<string> { "Invalid file name template!", e.Message });
 				}
 			}
@@ -783,7 +822,7 @@ namespace AlbumConsole {
 			IErrorHandler errHandler = new ErrorLogHandler();
 
 			if (RequiresConfirmation(args) || !Confirm(args, "You should never see this message.")) {
-				var importList = importListProvider.GetImportList(fileSystem, importFilePathProvider, errHandler);
+				var importList = importListProvider.GetImportList(fileSystem, importFilePathProvider, errHandler, new ConsoleLogger(longNames));
 				if (verbose) {
 					Console.WriteLine("\nSummary:");
 					foreach (var item in importList.AllItems) {
@@ -805,7 +844,7 @@ namespace AlbumConsole {
 					return new CommandResult(true, "Cancelled by user");
 				}
 			} else {
-				importItems = importListProvider.GetImportItems(fileSystem, importFilePathProvider, errHandler);
+				importItems = importListProvider.GetImportItems(fileSystem, importFilePathProvider, errHandler, new ConsoleLogger(longNames));
 			}
 
 			return null;
@@ -851,6 +890,7 @@ namespace AlbumConsole {
 				imported = new();
 				errHandler.Error("Invalid operation:");
 				errHandler.Error(e.Message);
+				// Console.Error.WriteLine(e);
 			}
 			return errHandler;
 		}
@@ -1103,61 +1143,74 @@ namespace AlbumConsole {
 
 			var fileSystem = new UndoFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory));
 
+			var count = 0;
+
 			Console.WriteLine($"Reading UNDO file {GetSuitablePath(fileSystem.GetUndoFilePath(), fileSystem, longNames)}");
-			var transactions = fileSystem.ReadUndoFile().ToList();
-			Console.WriteLine("{0} transactions:", transactions.Count);
-			foreach (var t in transactions) {
-				Console.WriteLine("{0}\t({1})\t -- {2} actions", t.Info, t.Date, t.Actions.Count);
-				if (verbose) {
-					foreach (var a in t.Actions) {
-						if (a is FileSystemMoveAction move) {
-							Console.WriteLine("  Move\t\t{0}\t -> {1}", GetSuitablePath(move.FromPath, fileSystem, longNames),
-								GetSuitablePath(move.ToPath, fileSystem, longNames));
-						} else if (a is FileSystemCopyAction copy) {
-							Console.WriteLine("  Copy\t\t{0}\t -> {1}", GetSuitablePath(copy.FromPath, fileSystem, longNames),
-								GetSuitablePath(copy.ToPath, fileSystem, longNames));
-						} else if (a is FileSystemCreationAction creation) {
-							Console.WriteLine("  Creation\t{0}\t{1}\t -> {2}", GetSuitablePath(creation.Path, fileSystem, longNames),
-								creation.FromDate, creation.ToDate);
-						} else if (a is FileSystemModificationAction modification) {
-							Console.WriteLine("  Modification\t{0}\t{1}\t -> {2}", GetSuitablePath(modification.Path, fileSystem, longNames),
-								modification.FromDate, modification.ToDate);
-						} else {
-							Console.WriteLine("  Unknown action");
+			List<FileSystemTransaction> transactions;
+			try {
+				transactions = fileSystem.ReadUndoFile().ToList();
+				Console.WriteLine("{0} transactions:", transactions.Count);
+				foreach (var t in transactions) {
+					Console.WriteLine("{0}\t({1})\t -- {2} actions", t.Info, t.Date, t.Actions.Count);
+					if (verbose) {
+						foreach (var a in t.Actions) {
+							if (a is FileSystemMoveAction move) {
+								Console.WriteLine("  Move\t\t{0}\t -> {1}", GetSuitablePath(move.FromPath, fileSystem, longNames),
+									GetSuitablePath(move.ToPath, fileSystem, longNames));
+							} else if (a is FileSystemCopyAction copy) {
+								Console.WriteLine("  Copy\t\t{0}\t -> {1}", GetSuitablePath(copy.FromPath, fileSystem, longNames),
+									GetSuitablePath(copy.ToPath, fileSystem, longNames));
+							} else if (a is FileSystemCreationAction creation) {
+								Console.WriteLine("  Creation\t{0}\t{1}\t -> {2}", GetSuitablePath(creation.Path, fileSystem, longNames),
+									creation.FromDate, creation.ToDate);
+							} else if (a is FileSystemModificationAction modification) {
+								Console.WriteLine("  Modification\t{0}\t{1}\t -> {2}", GetSuitablePath(modification.Path, fileSystem, longNames),
+									modification.FromDate, modification.ToDate);
+							} else {
+								Console.WriteLine("  Unknown action");
+							}
 						}
 					}
+					count++;
 				}
+			} catch (Exception e) {
+				Console.WriteLine("Error reading UNDO file: {0}", e.Message);
+				// Console.Error.WriteLine(e);
 			}
 			Console.WriteLine();
-			var count = transactions.Count;
 
 			Console.WriteLine($"Reading REDO file {GetSuitablePath(fileSystem.GetRedoFilePath(), fileSystem, longNames)}");
-			transactions = fileSystem.ReadUndoFile(true).ToList();
-			Console.WriteLine("{0} transactions:", transactions.Count);
-			foreach (var t in transactions) {
-				Console.WriteLine("{0}\t({1})\t -- {2} actions", t.Info, t.Date, t.Actions.Count);
-				if (verbose) {
-					foreach (var a in t.Actions) {
-						if (a is FileSystemMoveAction move) {
-							Console.WriteLine("  Move\t\t{0}\t -> {1}", GetSuitablePath(move.FromPath, fileSystem, longNames),
-								GetSuitablePath(move.ToPath, fileSystem, longNames));
-						} else if (a is FileSystemCopyAction copy) {
-							Console.WriteLine("  Copy\t\t{0}\t -> {1}", GetSuitablePath(copy.FromPath, fileSystem, longNames),
-								GetSuitablePath(copy.ToPath, fileSystem, longNames));
-						} else if (a is FileSystemCreationAction creation) {
-							Console.WriteLine("  Creation\t{0}\t{1}\t -> {2}", GetSuitablePath(creation.Path, fileSystem, longNames),
-								creation.FromDate, creation.ToDate);
-						} else if (a is FileSystemModificationAction modification) {
-							Console.WriteLine("  Modification\t{0}\t{1}\t -> {2}", GetSuitablePath(modification.Path, fileSystem, longNames),
-								modification.FromDate, modification.ToDate);
-						} else {
-							Console.WriteLine("  Unknown action");
+			try {
+				transactions = fileSystem.ReadUndoFile(true).ToList();
+				Console.WriteLine("{0} transactions:", transactions.Count);
+				foreach (var t in transactions) {
+					Console.WriteLine("{0}\t({1})\t -- {2} actions", t.Info, t.Date, t.Actions.Count);
+					if (verbose) {
+						foreach (var a in t.Actions) {
+							if (a is FileSystemMoveAction move) {
+								Console.WriteLine("  Move\t\t{0}\t -> {1}", GetSuitablePath(move.FromPath, fileSystem, longNames),
+									GetSuitablePath(move.ToPath, fileSystem, longNames));
+							} else if (a is FileSystemCopyAction copy) {
+								Console.WriteLine("  Copy\t\t{0}\t -> {1}", GetSuitablePath(copy.FromPath, fileSystem, longNames),
+									GetSuitablePath(copy.ToPath, fileSystem, longNames));
+							} else if (a is FileSystemCreationAction creation) {
+								Console.WriteLine("  Creation\t{0}\t{1}\t -> {2}", GetSuitablePath(creation.Path, fileSystem, longNames),
+									creation.FromDate, creation.ToDate);
+							} else if (a is FileSystemModificationAction modification) {
+								Console.WriteLine("  Modification\t{0}\t{1}\t -> {2}", GetSuitablePath(modification.Path, fileSystem, longNames),
+									modification.FromDate, modification.ToDate);
+							} else {
+								Console.WriteLine("  Unknown action");
+							}
 						}
 					}
+					count++;
 				}
+			} catch (Exception e) {
+				Console.WriteLine("Error reading REDO file: {0}", e.Message);
+				// Console.Error.WriteLine(e);
 			}
 			Console.WriteLine();
-			count += transactions.Count;
 
 			if (args.IsSet("clear")) {
 				if (Confirm(args, "Do you really wish to clear history?")) {
@@ -1195,7 +1248,8 @@ namespace AlbumConsole {
 			var verbose = args.IsSet("verbose");
 			var longNames = args.IsSet("long-names");
 
-			var fileSystem = new UndoFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory));
+			var fileSystem = new UndoFileSystemProvider(new IndexingFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory),
+				new EXIFFileInfoProvider()));
 
 			var t = fileSystem.Undo(verbose ? new ConsoleLogger(longNames) : new NoLogger());
 			if (t is not null) {
@@ -1209,7 +1263,8 @@ namespace AlbumConsole {
 			var verbose = args.IsSet("verbose");
 			var longNames = args.IsSet("long-names");
 
-			var fileSystem = new UndoFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory));
+			var fileSystem = new UndoFileSystemProvider(new IndexingFileSystemProvider(new NormalFileSystemProvider(args.AlbumDirectory),
+				new EXIFFileInfoProvider()));
 
 			var t = fileSystem.Redo(verbose ? new ConsoleLogger(longNames) : new NoLogger());
 			if (t is not null) {
@@ -1217,6 +1272,56 @@ namespace AlbumConsole {
 			} else {
 				return new CommandResult(false, "Nothing to redo");
 			}
+		}
+
+		public static CommandResult UpdateIndex(CommandArguments args) {
+			var longNames = args.IsSet("long-names");
+
+			var res = GetNormalFilters(args, out List<IFileFilter> fileFilters);
+			if (res is not null)
+				return res;
+
+			res = GetFileInfoProvider(args, out IFileInfoProvider fileInfoProvider2);
+			if (res is not null)
+				return res;
+
+			res = GetFileSystemProvider(args, args.AlbumDirectory, out IFileSystemProvider fileSystem2);
+			if (res is not null)
+				return res;
+
+			var fileInfoProvider = new RelativePathFileInfoProvider(fileInfoProvider2, fileSystem2.GetFullPath(args.AlbumDirectory));
+			var fileSystem = new IndexingFileSystemProvider(fileSystem2, fileInfoProvider, dontReadFile: args.IsSet("clear-index"));
+
+			res = GetImportFilePathProvider(args, out IImportFilePathProvider importFilePathProvider, new ImportFilePathProvider(new List<IFilePathProvider> {
+				new DirectoryFilePathProvider(fileSystem.GetFullPath(args.AlbumDirectory), true, false)
+			}, GetExtensions(args)));
+			if (res is not null)
+				return res;
+
+			res = GetImportItems(args, importFilePathProvider, fileFilters, fileSystem2, out IEnumerable<ImportItem> items,
+				$"Updating files in {GetSuitablePath(args.AlbumDirectory, fileSystem, longNames)}", "update", fileInfoProvider,
+				new TemplateFileNameProvider("INDEX{noext}"));
+			if (res is not null)
+				return res;
+
+			var count = 0;
+			foreach (var f in fileSystem.Index.AllFiles()) {
+				fileSystem.UpdateFile(f);
+				Console.WriteLine("Check\t{0}", GetSuitablePath(f, fileSystem, longNames));
+				count++;
+			}
+			foreach (var item in items) {
+				if (!item.Cancelled) {
+					fileSystem.UpdateFile(item.SourcePath);
+					Console.WriteLine("Update\t{0}", GetSuitablePath(item.SourcePath, fileSystem, longNames));
+					count++;
+				}
+			}
+			fileSystem.WriteIndexFile();
+
+			Console.WriteLine("\nSuccessfully updated {0} files", count);
+
+			return new CommandResult(true);
 		}
 	}
 }
