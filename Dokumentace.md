@@ -1,5 +1,5 @@
 # Konzolová èást
-Soubory starající sse chod konzolové aplikace.
+Soubory starající se o chod konzolové aplikace - zpracování argumentù, spuštìní pøísloušného pøíkazu a ošetøení chyb.
 
 ## AlbumConsole/Program.cs
 Vstupní bod programu. Naète config file, naparasuje argumenty a spustí pøíslušnı pøíkaz. Ošetøuje nezachycené chyby.
@@ -25,23 +25,28 @@ Definuje tøídy, které se starají o pøípady, kdy nastane chyba (napø. soubor neex
 Definuje tøídy, které umoòují prùbìnì vypisovat informace o prùbìhu pøíkazu.
 
 ## AlbumLibrary/FileSystemProvider.cs
-Definuje tøídy a funkce pro práci se soubory. Implementuje operace UNDO a REDO.
+Definuje tøídy a funkce pro práci se soubory. Implementuje operace UNDO a REDO - tj. wrapper, kterı automaticky zaznamenává operace provedené se soubory a ukládá tyto operace do souborù, aby šly vrátit zpìt.
 Tøídu pro práci se soubory definuje i `AlbumLibrary/FileIndex.cs` a to tøídu, která ukládá informace o souborech a jejich EXIF datech.
 
 # Soubory starající se o zpracování souborù
 Následující soubory se (v tomto poøadí) pouívají pøi zpracování souborù (import, export atd.).
+Jedná se o soubory kde je implementována vlastní logika zpracovávání souborù, zatímco `AlbumConsole/` definuje rùzné zpùsoby jak k této funkcionalitì pøistupovat.
 
 ## AlbumLibrary/ImportFilePathProvider.cs
 Definuje tøídy a funkce, které se starají získání cest ke všem souborùm, které mají bıt zpracovány. Stará se jen o cesty zdrojovıch souborù.
+Obsahuje nìkolik jednoduchıch providerù - jeden soubor, jeden adresáø (ne)rekurzivnì, jeden adresáø s omezením na název souboru a naposledy pouité soubory.
 
 ## AlbumLibrary/FileInfoProvider.cs
 Definuje tøídy, které zjišují informace o danıch souborech, napøíklad ètením EXIFu.
+Je zde provider kterı naète data z EXIFu, potom jeden, kterı naète data z EXIFu ale ingoruje datum a èas, a taky jeden, kterı k získanım informacím pøipojí relativní cestu souboru k adresáøi alba.
 
 ## AlbumLibrary/FileFilter.cs
-Definuje tøídy, které umoòují soubory filtrovat na základìch informací o nich získanıch. Obsahuje i filtr `TimeShiftFilter`, kterı se stará o posouvání èasù získanıch z EXIFu.
+Definuje tøídy, které umoòují soubory filtrovat na základìch informací o nich získanıch.
+Nachází se zde filtry `BeforeDateFilter` a `AfterDateFilter`, které kontrolují datum a èas poøízení fotky a taky `TemplateFilter`, kterı souboru pøiøadí jméno pomocí vhodného `FileNameProvider`u a toto jméno porovná se zadanou hodnotou.
+Dále se zde nachází i filtr `TimeShiftFilter`, kterı se stará o posouvání èasù získanıch z EXIFu.
 
 ## AlbumLibrary/FileNameProvider.cs
-Definuje tøídy, které zpracovávanım souborùm na základì informací o nich (získanıch pomocí `IFileNameProvider`u) pøiøazují jména (vlastnì relativní cesty v rámci alba). 
+Definuje tøídy, které zpracovávanım souborùm na základì informací o nich (získanıch pomocí `IFileNameProvider`u) pøiøazují jména (vlastnì relativní cesty v rámci alba).
 
 ## AlbumLibrary/ImportListProvider.cs
 Vyuívá tøíd pøedchozích souborù k získání seznamu zdrojovıch a cílovıch cest souborù ke zpracování.
