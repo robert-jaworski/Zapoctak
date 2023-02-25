@@ -9,12 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AlbumConsole", "AlbumConsol
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{229BA1A5-8EE9-4FCA-96CF-F03C48EC85EA}"
 	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
+		Dokumentace.md = Dokumentace.md
 		Použití.md = Použití.md
+		README.md = README.md
 		Specifikace.md = Specifikace.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbumTest", "AlbumTest\AlbumTest.csproj", "{1F5528E6-0FD3-4092-A307-B0E09F29E4CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AlbumTest", "AlbumTest\AlbumTest.csproj", "{1F5528E6-0FD3-4092-A307-B0E09F29E4CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

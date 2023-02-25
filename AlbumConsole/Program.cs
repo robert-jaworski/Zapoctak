@@ -26,21 +26,21 @@ try {
 } catch (CLIArgumentException e) {
 	Console.WriteLine("Invalid arguments:");
 	Console.WriteLine(e.Message);
-	// Console.Error.WriteLine(e);
+	//Console.Error.WriteLine(e);
 	return 2;
 } catch (InternalException e) {
 	Console.WriteLine("An unexpected internal error:");
 	Console.WriteLine(e.Message);
-	// Console.Error.WriteLine(e);
+	Console.Error.WriteLine(e);
 	return 3;
 } catch (NotImplementedException e) {
 	Console.WriteLine("Not implemented:");
 	Console.WriteLine(e.Message);
-	// Console.Error.WriteLine(e);
+	Console.Error.WriteLine(e);
 	return 4;
 } catch (Exception e) {
 	Console.WriteLine("An unexpected error:");
 	Console.WriteLine(e.Message);
-	// Console.Error.WriteLine(e);
+	Console.Error.WriteLine(e);
 	return 15;
 }

@@ -3,8 +3,13 @@
 
 Kadı pøíkaz má svoje parametry a nastavení, nìkterá nastavení jdou pouít na všechny pøíkazy.
 
+Pro získaní nápovìdy spuste pøíkaz `help` nebo program spuste bez pøíkazu.
+Tam by mìlo bıt vše potøebné.
+
+(Informace v tomto souboru mohou bıt zastaralé.)
+
 ## Parametry
-Parametry mají dlouhou (napø. `--album-dir`, `--verbose`) a krátkou verzi (`-d`, `-v`). Nìkteré parametry poø´adují další hodnotu (tøeba název souboru nebo èíslo), které následuje hned po názvu parametru. Krátké verze paramentrù jdou spojovat (`-vd`). Pokud spojíme krátké verze parametrù, které potøebují dodateènou hodnotu, musí tyto hodnoty následovat ve stejném poøadí.
+Parametry mají dlouhou (napø. `--album-dir`, `--verbose`) a krátkou verzi (`-d`, `-v`). Nìkteré parametry poadují další hodnotu (tøeba název souboru nebo èíslo), které následuje hned po názvu parametru. Krátké verze paramentrù jdou spojovat (`-vd`). Pokud spojíme krátké verze parametrù, které potøebují dodateènou hodnotu, musí tyto hodnoty následovat ve stejném poøadí.
 
 ## Typy parametrù
 Parametry jsou ètyø typù:
