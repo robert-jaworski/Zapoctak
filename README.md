@@ -4,6 +4,9 @@ Program na snadné spravování rodinných fotek - import, tøídìní do složek, pøejme
 
 Na ètení EXIF dat byla použita následující knihovna: https://drewnoakes.com/code/exif/
 
+## Dokumentace
+Uživatelská dokumentace je pøístupná pomocí pøíkazu `help`. Programátorská dokumentace je v soubory `Dokumentace.md` a dále v komentáøích v programu.
+
 ## Plán
 
 - [x] Jednoduché importování fotek (seznam fotek, cílový adresáø)
@@ -12,13 +15,15 @@ Na ètení EXIF dat byla použita následující knihovna: https://drewnoakes.com/code
 - [x] Template jména souborù a adresáøového systému
 - [x] Config soubory
 - [x] Posunování èasu pøi importu, a také již importovaných souborù - ~~pøepsání EXIFu~~ a pøejmenování souboru
-- [ ] Indexovací soubory
+- [x] Indexovací soubory
 - [x] Poèítání hashù - kontrola duplikátù
 - [x] Mazání - koš
 - [x] `undo` - historie zmìn
 - [x] `backup`
 - [x] ~~select~~, `export` - vybírání fotek splòující urèíté vlastnosti a jejich export, popø. jiné operace na nich (`change`)
 - [ ] Interaktivní mód
+- [ ] Hashe souborù v indexovacím souboru
+- [ ] Tagy
 
 ## Složkový systém projektu
 
