@@ -3,7 +3,7 @@ using AlbumLibrary;
 
 try {
 	// First get info about the current executable and album directory and profile
-	CommandArguments command = CommandArguments.ParseArguments(Environment.GetCommandLineArgs());
+	CommandArguments command = CommandArguments.ParseArguments(Environment.GetCommandLineArgs(), true);
 
 	var fileSystem = new NormalFileSystemProvider(command.AlbumDirectory);
 	var errHandler = new ErrorLogHandler();

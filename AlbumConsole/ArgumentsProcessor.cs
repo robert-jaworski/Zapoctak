@@ -23,12 +23,10 @@
 		/// <param name="args"></param>
 		/// <returns></returns>
 		/// <exception cref="ArgumentException"></exception>
-		public static CommandArguments ParseArguments(string[] args) {
+		public static CommandArguments ParseArguments(string[] args, bool allowIncomplete = false) {
 			if (args.Length == 0)
 				throw new ArgumentException("No arguments supplied");
-			var exeDir = Path.GetDirectoryName(Path.GetFullPath(args[0]));
-			if (exeDir == null)
-				throw new ArgumentException("Unexpected error");
+			var exeDir = Path.GetDirectoryName(Path.GetFullPath(args[0])) ?? throw new ArgumentException("Unexpected error");
 			var albumDir = Path.GetFullPath(".");
 			var profile = "default";
 
@@ -47,21 +45,23 @@
 				try {
 					parsedArgs = args.Length >= 2 ? parameters.GetArguments(args[2..]) : parameters.GetArguments(Array.Empty<string>());
 				} catch (CLIArgumentException e) {
-					if (e.ProcessedArgs.ContainsKey("help") && (e.ProcessedArgs["help"] as FlagArgument)?.IsSet == true)
+					if (allowIncomplete) {
+						parsedArgs = e.ProcessedArgs;
+					} else if (e.ProcessedArgs.ContainsKey("help") && e.ProcessedArgs["help"] is FlagArgument { IsSet: true }) {
 						parsedArgs = new Dictionary<string, IArgument> {
-						{ "help", new FlagArgument(true) },
-						{ "verbose", e.ProcessedArgs.ContainsKey("verbose") ?
-							(e.ProcessedArgs["verbose"] as FlagArgument) ?? new FlagArgument(false) :
-							new FlagArgument(false) },
-						{ "album-dir", e.ProcessedArgs.ContainsKey("album-dir") ?
-							(e.ProcessedArgs["album-dir"] as StringArgument) ?? new StringArgument(".") :
-							new StringArgument(".") },
-						{ "profile", e.ProcessedArgs.ContainsKey("profile") ?
-							(e.ProcessedArgs["profile"] as StringArgument) ?? new StringArgument(".") :
-							new StringArgument(".") },
-					};
-					else
-						throw e;
+							{ "help", new FlagArgument(true) },
+							{ "verbose", e.ProcessedArgs.ContainsKey("verbose") ?
+								(e.ProcessedArgs["verbose"] as FlagArgument) ?? new FlagArgument(false) :
+								new FlagArgument(false) },
+							{ "album-dir", e.ProcessedArgs.ContainsKey("album-dir") ?
+								(e.ProcessedArgs["album-dir"] as StringArgument) ?? new StringArgument(".") :
+								new StringArgument(".") },
+							{ "profile", e.ProcessedArgs.ContainsKey("profile") ?
+								(e.ProcessedArgs["profile"] as StringArgument) ?? new StringArgument(".") :
+								new StringArgument(".") },
+						};
+					} else
+						throw;
 				}
 			}
 
