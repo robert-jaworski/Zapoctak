@@ -1,43 +1,43 @@
-# Program na spravování fotek
+# Program na spravovÃ¡nÃ­ fotek
 
-Program na snadné spravování rodinnıch fotek - import, tøídìní do sloek, pøejmenování, backup, kontrola duplikátù atd.
+Program na snadnÃ© spravovÃ¡nÃ­ rodinnÃ½ch fotek - import, tÅ™Ã­dÄ›nÃ­ do sloÅ¾ek, pÅ™ejmenovÃ¡nÃ­, backup, kontrola duplikÃ¡tÅ¯ atd.
 
-Na ètení EXIF dat byla pouita následující knihovna: https://drewnoakes.com/code/exif/
+Na ÄtenÃ­ EXIF dat byla pouÅ¾ita nÃ¡sledujÃ­cÃ­ knihovna: https://drewnoakes.com/code/exif/
 
 ## Dokumentace
-Uivatelská dokumentace je pøístupná pomocí pøíkazu `help`. Programátorská dokumentace je v soubory `Dokumentace.md` a dále v komentáøích v programu.
+UÅ¾ivatelskÃ¡ dokumentace je pÅ™Ã­stupnÃ¡ pomocÃ­ pÅ™Ã­kazu `help`. ProgramÃ¡torskÃ¡ dokumentace je v soubory `Dokumentace.md` a dÃ¡le v komentÃ¡Å™Ã­ch v programu.
 
-## Plán
+## PlÃ¡n
 
-- [x] Jednoduché importování fotek (seznam fotek, cílovı adresáø)
-- [x] Automatické vyhledávání zdroje (šablony foákovıch SD karet) - pøes config soubory
+- [x] JednoduchÃ© importovÃ¡nÃ­ fotek (seznam fotek, cÃ­lovÃ½ adresÃ¡Å™)
+- [x] AutomatickÃ© vyhledÃ¡vÃ¡nÃ­ zdroje (Å¡ablony foÅ¥Ã¡kovÃ½ch SD karet) - pÅ™es config soubory
 - [x] Data z EXIFu
-- [x] Template jména souborù a adresáøového systému
+- [x] Template jmÃ©na souborÅ¯ a adresÃ¡Å™ovÃ©ho systÃ©mu
 - [x] Config soubory
-- [x] Posunování èasu pøi importu, a také ji importovanıch souborù - ~~pøepsání EXIFu~~ a pøejmenování souboru
-- [x] Indexovací soubory
-- [x] Poèítání hashù - kontrola duplikátù
-- [x] Mazání - koš
-- [x] `undo` - historie zmìn
+- [x] PosunovÃ¡nÃ­ Äasu pÅ™i importu, a takÃ© jiÅ¾ importovanÃ½ch souborÅ¯ - ~~pÅ™epsÃ¡nÃ­ EXIFu~~ a pÅ™ejmenovÃ¡nÃ­ souboru
+- [x] IndexovacÃ­ soubory
+- [x] PoÄÃ­tÃ¡nÃ­ hashÅ¯ - kontrola duplikÃ¡tÅ¯
+- [x] MazÃ¡nÃ­ - koÅ¡
+- [x] `undo` - historie zmÄ›n
 - [x] `backup`
-- [x] ~~select~~, `export` - vybírání fotek splòující urèíté vlastnosti a jejich export, popø. jiné operace na nich (`change`)
-- [ ] Interaktivní mód
-- [ ] Hashe souborù v indexovacím souboru
+- [x] ~~select~~, `export` - vybÃ­rÃ¡nÃ­ fotek splÅˆujÃ­cÃ­ urÄÃ­tÃ© vlastnosti a jejich export, popÅ™. jinÃ© operace na nich (`change`)
+- [ ] InteraktivnÃ­ mÃ³d
+- [ ] Hashe souborÅ¯ v indexovacÃ­m souboru
 - [ ] Tagy
 
-## Slokovı systém projektu
+## SloÅ¾kovÃ½ systÃ©m projektu
 
-- README.md - pøehled projektu, plán
-- Specifikace.md - high level nápad projektu
-- Pouití.md - jak program pouívat
+- README.md - pÅ™ehled projektu, plÃ¡n
+- Specifikace.md - high level nÃ¡pad projektu
+- PouÅ¾itÃ­.md - jak program pouÅ¾Ã­vat
 
 ### AlbumLibrary
 
-Soubory tıkající se samotné logiky programu
+Soubory tÃ½kajÃ­cÃ­ se samotnÃ© logiky programu
 
 ### AlbumConsole
 
-Soubory tıkající se konzolové aplikace
+Soubory tÃ½kajÃ­cÃ­ se konzolovÃ© aplikace
 
 ### AlbumTest
 

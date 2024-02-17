@@ -1,50 +1,50 @@
-# Pouití
+# PouÅ¾itÃ­
 `album <command> [parameters]`
 
-Kadı pøíkaz má svoje parametry a nastavení, nìkterá nastavení jdou pouít na všechny pøíkazy.
+KaÅ¾dÃ½ pÅ™Ã­kaz mÃ¡ svoje parametry a nastavenÃ­, nÄ›kterÃ¡ nastavenÃ­ jdou pouÅ¾Ã­t na vÅ¡echny pÅ™Ã­kazy.
 
-Pro získaní nápovìdy spuste pøíkaz `help` nebo program spuste bez pøíkazu.
-Tam by mìlo bıt vše potøebné.
+Pro zÃ­skanÃ­ nÃ¡povÄ›dy spusÅ¥te pÅ™Ã­kaz `help` nebo program spusÅ¥te bez pÅ™Ã­kazu.
+Tam by mÄ›lo bÃ½t vÅ¡e potÅ™ebnÃ©.
 
-(Informace v tomto souboru mohou bıt zastaralé.)
+(Informace v tomto souboru mohou bÃ½t zastaralÃ©.)
 
 ## Parametry
-Parametry mají dlouhou (napø. `--album-dir`, `--verbose`) a krátkou verzi (`-d`, `-v`). Nìkteré parametry poadují další hodnotu (tøeba název souboru nebo èíslo), které následuje hned po názvu parametru. Krátké verze paramentrù jdou spojovat (`-vd`). Pokud spojíme krátké verze parametrù, které potøebují dodateènou hodnotu, musí tyto hodnoty následovat ve stejném poøadí.
+Parametry majÃ­ dlouhou (napÅ™. `--album-dir`, `--verbose`) a krÃ¡tkou verzi (`-d`, `-v`). NÄ›kterÃ© parametry poÅ¾adujÃ­ dalÅ¡Ã­ hodnotu (tÅ™eba nÃ¡zev souboru nebo ÄÃ­slo), kterÃ© nÃ¡sleduje hned po nÃ¡zvu parametru. KrÃ¡tkÃ© verze paramentrÅ¯ jdou spojovat (`-vd`). Pokud spojÃ­me krÃ¡tkÃ© verze parametrÅ¯, kterÃ© potÅ™ebujÃ­ dodateÄnou hodnotu, musÃ­ tyto hodnoty nÃ¡sledovat ve stejnÃ©m poÅ™adÃ­.
 
-## Typy parametrù
-Parametry jsou ètyø typù:
-- `flag` - buï je nastaven nebo ne, napø. `--verbose`
-- `number` - èíslo
-- `string` - text, napø. `--album-dir`
-- `files` - seznam souborù, ukonèeno jakmile se narazí na další parametr, napø. `--import-files abc.jpg def.jpg -x xyz.jpg` bude odpovídat souborùm `abc.jpg def.jpg`
-    - seznam souborù mùe obsahovat název sloky ukonèenı `/`, resp. `\` (napø. `photos/`), ten bude odpovídat všem souborùm v dané sloce (nerekurzivní)
-    - pro rekurzivní procházení podadresáøù ukonèete název sloky `/...`, resp. `\...`
-    - seznam souborù mùe taky obsahovat intervaly souborù, specifikované pomocí `...` (napø. `img010.jpg ... img029.jpg`, `img100.jpg...`, `...foto/img100.jpg`, `../foto/img100.jpg ... ../foto/img300.jpg`)
-    - odkaz na poslednì upravené soubory `@last`, popø. `@lastN` kde N je poèet operací, které nás zajímají, tedy `@last3` bude odpovídat všem souborùm, které jsme upravili v posledních tøech operacích (tedy pøikazech)
-    - Na Windows je moné pouít syntaxi `:\cesta\k\souborum\` pro importování ze všech diskù, které danou cestu obsahují
+## Typy parametrÅ¯
+Parametry jsou ÄtyÅ™ typÅ¯:
+- `flag` - buÄ je nastaven nebo ne, napÅ™. `--verbose`
+- `number` - ÄÃ­slo
+- `string` - text, napÅ™. `--album-dir`
+- `files` - seznam souborÅ¯, ukonÄeno jakmile se narazÃ­ na dalÅ¡Ã­ parametr, napÅ™. `--import-files abc.jpg def.jpg -x xyz.jpg` bude odpovÃ­dat souborÅ¯m `abc.jpg def.jpg`
+    - seznam souborÅ¯ mÅ¯Å¾e obsahovat nÃ¡zev sloÅ¾ky ukonÄenÃ½ `/`, resp. `\` (napÅ™. `photos/`), ten bude odpovÃ­dat vÅ¡em souborÅ¯m v danÃ© sloÅ¾ce (nerekurzivnÃ­)
+    - pro rekurzivnÃ­ prochÃ¡zenÃ­ podadresÃ¡Å™Å¯ ukonÄete nÃ¡zev sloÅ¾ky `/...`, resp. `\...`
+    - seznam souborÅ¯ mÅ¯Å¾e taky obsahovat intervaly souborÅ¯, specifikovanÃ© pomocÃ­ `...` (napÅ™. `img010.jpg ... img029.jpg`, `img100.jpg...`, `...foto/img100.jpg`, `../foto/img100.jpg ... ../foto/img300.jpg`)
+    - odkaz na poslednÄ› upravenÃ© soubory `@last`, popÅ™. `@lastN` kde N je poÄet operacÃ­, kterÃ© nÃ¡s zajÃ­majÃ­, tedy `@last3` bude odpovÃ­dat vÅ¡em souborÅ¯m, kterÃ© jsme upravili v poslednÃ­ch tÅ™ech operacÃ­ch (tedy pÅ™ikazech)
+    - Na Windows je moÅ¾nÃ© pouÅ¾Ã­t syntaxi `:\cesta\k\souborum\` pro importovÃ¡nÃ­ ze vÅ¡ech diskÅ¯, kterÃ© danou cestu obsahujÃ­
 
-## Univerzální parametry
-- `--album-dir`, `-d` - nastaví adresáø s albem, se kterım budeme pracovat. Defaultní hodnota je aktuální adresáø.
-- `--verbose`, `-v` - program vypisuje více informací
+## UniverzÃ¡lnÃ­ parametry
+- `--album-dir`, `-d` - nastavÃ­ adresÃ¡Å™ s albem, se kterÃ½m budeme pracovat. DefaultnÃ­ hodnota je aktuÃ¡lnÃ­ adresÃ¡Å™.
+- `--verbose`, `-v` - program vypisuje vÃ­ce informacÃ­
 
-## Speciální parametry
-- Pøíkazy `metadata`, `import` a `export`
-    - parameter `--extensions` oèekává seznam povolenıch typù souborù oddìlenıch èárkami, napø. `jpg,.png` (typy souborù mohou ale nemusí obsahovat teèku)
-- Pøíkazy `import` a `export`
-    - parameter `--template` obsahuje template názvu vıslednıch souborù. Defaultní hodnota je `{YYYY}/{MM}/{YYYY}{MM}{DD}-{hh}{mm}{ss}`.
-        - Template se mùe skládat z více vlastních templatù oddìlenıch èárkou, pouije se první, kterı jde.
-        - Template mùe obsahovat placeholdery které se specifikují `{type:options#width}`, kde `options` a `width` jsou nepovinné. `width` specifikuje poadovanou minimální šíøku poloky. `options` blíe specifikuje, co bude vısledkem nahrazení placeholderu.
-        - Dostupné hodnoty typù jsou: `year`/`Y`, `YYYY`, `month`/`M`, `MM`, `day`/`D`, `DD`, `hour`/`h`, `hh`, `minute`/`m`, `mm`, `second`/`s`, `ss`, `device:name`, `device:manufacturer`, `device:model`, `noextension`/`noext`, `extension`/`ext`/`.`, `file`/`file:name`, `file:extension`/`file:ext`, `file:relativePath`/`file:relPath`/`file:rel`
-        - Pokud nìkterá hodnota není dostupná (napø. `device:model`), template se nepouije
-        - Placeholdery data a èasu mùou mít `options` následující: `exif` (defaultní), `create`, `modify`. Pokud není `options` nastaveno, pouije se buï `exif` nebo `create`, podle toho, co existuje
-        - Placeholdery `extension` a `noextension` umoòují filtrovat podle koncovek souborù, napø. `{YYYY}/{MM}/{YYYY}{MM}{DD}-{hh}{mm}{ss}{ext:.jpg},other/{YYYY}{MM}{DD}-{hh}{mm}{ss}`. Rozdíl je v tom, e `extension` se nahradí specifikovanou koncovkou souboru (pøesnì jak je v templatu), ale `noextension` zùstane prázdnı. Samotnı `{ext}` se nahradí koncovkou pùvodního souboru.
-        - Pokud není specifikovanı `extension` nebo `noextension` na konec názvu se pøidá koncovka pùvodního souboru
-    - parametry `--after-date` a `--before-date` umoòují filtrovat fotky pomocí data a èasu, kdy byly poøízeny
-    - parametr `--time-shift` umoòuje posunout èas, kdy byly fotky poøízeny. Tato operace ale nijak nepøepisuje EXIF (kvùli hešování a lenosti)
-    - parametru `filter` se pøedává template názvu souboru. Pokud se template úspìšnì vyhodnotí do tvaru `xxx=yyy` nebo `aaa=bbb=ccc`, bude soubor pouit jen tehdy, pokud rovnosti platí
+## SpeciÃ¡lnÃ­ parametry
+- PÅ™Ã­kazy `metadata`, `import` a `export`
+    - parameter `--extensions` oÄekÃ¡vÃ¡ seznam povolenÃ½ch typÅ¯ souborÅ¯ oddÄ›lenÃ½ch ÄÃ¡rkami, napÅ™. `jpg,.png` (typy souborÅ¯ mohou ale nemusÃ­ obsahovat teÄku)
+- PÅ™Ã­kazy `import` a `export`
+    - parameter `--template` obsahuje template nÃ¡zvu vÃ½slednÃ½ch souborÅ¯. DefaultnÃ­ hodnota je `{YYYY}/{MM}/{YYYY}{MM}{DD}-{hh}{mm}{ss}`.
+        - Template se mÅ¯Å¾e sklÃ¡dat z vÃ­ce vlastnÃ­ch templatÅ¯ oddÄ›lenÃ½ch ÄÃ¡rkou, pouÅ¾ije se prvnÃ­, kterÃ½ jde.
+        - Template mÅ¯Å¾e obsahovat placeholdery kterÃ© se specifikujÃ­ `{type:options#width}`, kde `options` a `width` jsou nepovinnÃ©. `width` specifikuje poÅ¾adovanou minimÃ¡lnÃ­ Å¡Ã­Å™ku poloÅ¾ky. `options` blÃ­Å¾e specifikuje, co bude vÃ½sledkem nahrazenÃ­ placeholderu.
+        - DostupnÃ© hodnoty typÅ¯ jsou: `year`/`Y`, `YYYY`, `month`/`M`, `MM`, `day`/`D`, `DD`, `hour`/`h`, `hh`, `minute`/`m`, `mm`, `second`/`s`, `ss`, `device:name`, `device:manufacturer`, `device:model`, `noextension`/`noext`, `extension`/`ext`/`.`, `file`/`file:name`, `file:extension`/`file:ext`, `file:relativePath`/`file:relPath`/`file:rel`
+        - Pokud nÄ›kterÃ¡ hodnota nenÃ­ dostupnÃ¡ (napÅ™. `device:model`), template se nepouÅ¾ije
+        - Placeholdery data a Äasu mÅ¯Å¾ou mÃ­t `options` nÃ¡sledujÃ­cÃ­: `exif` (defaultnÃ­), `create`, `modify`. Pokud nenÃ­ `options` nastaveno, pouÅ¾ije se buÄ `exif` nebo `create`, podle toho, co existuje
+        - Placeholdery `extension` a `noextension` umoÅ¾ÅˆujÃ­ filtrovat podle koncovek souborÅ¯, napÅ™. `{YYYY}/{MM}/{YYYY}{MM}{DD}-{hh}{mm}{ss}{ext:.jpg},other/{YYYY}{MM}{DD}-{hh}{mm}{ss}`. RozdÃ­l je v tom, Å¾e `extension` se nahradÃ­ specifikovanou koncovkou souboru (pÅ™esnÄ› jak je v templatu), ale `noextension` zÅ¯stane prÃ¡zdnÃ½. SamotnÃ½ `{ext}` se nahradÃ­ koncovkou pÅ¯vodnÃ­ho souboru.
+        - Pokud nenÃ­ specifikovanÃ½ `extension` nebo `noextension` na konec nÃ¡zvu se pÅ™idÃ¡ koncovka pÅ¯vodnÃ­ho souboru
+    - parametry `--after-date` a `--before-date` umoÅ¾ÅˆujÃ­ filtrovat fotky pomocÃ­ data a Äasu, kdy byly poÅ™Ã­zeny
+    - parametr `--time-shift` umoÅ¾Åˆuje posunout Äas, kdy byly fotky poÅ™Ã­zeny. Tato operace ale nijak nepÅ™episuje EXIF (kvÅ¯li heÅ¡ovÃ¡nÃ­ a lenosti)
+    - parametru `filter` se pÅ™edÃ¡vÃ¡ template nÃ¡zvu souboru. Pokud se template ÃºspÄ›Å¡nÄ› vyhodnotÃ­ do tvaru `xxx=yyy` nebo `aaa=bbb=ccc`, bude soubor pouÅ¾it jen tehdy, pokud rovnosti platÃ­
 
-## Pøíkazy
-- `help` - zobrazí dostupné pøíkazy a parametry
+## PÅ™Ã­kazy
+- `help` - zobrazÃ­ dostupnÃ© pÅ™Ã­kazy a parametry
 - `metadata <files>`
 - `import <files>`
 - `export <files>`

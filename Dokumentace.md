@@ -1,61 +1,61 @@
-# Konzolová èást
-Soubory starající se o chod konzolové aplikace - zpracování argumentù, spuštìní pøísloušného pøíkazu a ošetøení chyb.
+# KonzolovÃ¡ ÄÃ¡st
+Soubory starajÃ­cÃ­ se o chod konzolovÃ© aplikace - zpracovÃ¡nÃ­ argumentÅ¯, spuÅ¡tÄ›nÃ­ pÅ™Ã­slouÅ¡nÃ©ho pÅ™Ã­kazu a oÅ¡etÅ™enÃ­ chyb.
 
 ## AlbumConsole/Program.cs
-Vstupní bod programu. Naète config file, naparasuje argumenty a spustí pøíslušnı pøíkaz. Ošetøuje nezachycené chyby.
+VstupnÃ­ bod programu. NaÄte config file, naparasuje argumenty a spustÃ­ pÅ™Ã­sluÅ¡nÃ½ pÅ™Ã­kaz. OÅ¡etÅ™uje nezachycenÃ© chyby.
 
 ## AlbumConsole/ArgumentsProcessor.cs
-Stará se o parsování argumentù (pouívá `AlbumConsole/CLIArguments.cs`). Definuje tøídu pro `CommandArguments` pro snadnou práci s naparsovanımi argumenty. (Napøíklad snadno umoní zkontrolovat jestli je nastaveno `--verbose` nebo z argumentù zjistí, jakı je adresáø aktuálního alba.)
+StarÃ¡ se o parsovÃ¡nÃ­ argumentÅ¯ (pouÅ¾Ã­vÃ¡ `AlbumConsole/CLIArguments.cs`). Definuje tÅ™Ã­du pro `CommandArguments` pro snadnou prÃ¡ci s naparsovanÃ½mi argumenty. (NapÅ™Ã­klad snadno umoÅ¾nÃ­ zkontrolovat jestli je nastaveno `--verbose` nebo z argumentÅ¯ zjistÃ­, jakÃ½ je adresÃ¡Å™ aktuÃ¡lnÃ­ho alba.)
 
 ## AlbumConsole/CLIArguments.cs
-Definuje obecnı zpùsob deklarování oèekávánıch argumentù. Stará se o vlastní extrakci a parsování argumentù.
+Definuje obecnÃ½ zpÅ¯sob deklarovÃ¡nÃ­ oÄekÃ¡vÃ¡nÃ½ch argumentÅ¯. StarÃ¡ se o vlastnÃ­ extrakci a parsovÃ¡nÃ­ argumentÅ¯.
 
 ## AlbumConsole/ConfigFileReader.cs
-Definuje tøídy a funkce pro naètení config souboru a pouití config souboru pro nastavení defaultních hodnot argument.
+Definuje tÅ™Ã­dy a funkce pro naÄtenÃ­ config souboru a pouÅ¾itÃ­ config souboru pro nastavenÃ­ defaultnÃ­ch hodnot argument.
 
 ## AlbumConsole/Commands.cs
-Definuje moné pøíkazy, jejich oèekávané argumenty, jejich popisy a funkce, které se mají zavolat pro jednotlivé pøíkazy.
+Definuje moÅ¾nÃ© pÅ™Ã­kazy, jejich oÄekÃ¡vanÃ© argumenty, jejich popisy a funkce, kterÃ© se majÃ­ zavolat pro jednotlivÃ© pÅ™Ã­kazy.
 
-# Uiteèné vìci z AlbumLibrary/
+# UÅ¾iteÄnÃ© vÄ›ci z AlbumLibrary/
 
 ## AlbumLibrary/ErrorHandler.cs
-Definuje tøídy, které se starají o pøípady, kdy nastane chyba (napø. soubor neexistuje nebo nejde zkopírovat). Umoòuje chybu vypsat na konzoli, uloit do seznamu nebo vyhodit vıjimku.
+Definuje tÅ™Ã­dy, kterÃ© se starajÃ­ o pÅ™Ã­pady, kdy nastane chyba (napÅ™. soubor neexistuje nebo nejde zkopÃ­rovat). UmoÅ¾Åˆuje chybu vypsat na konzoli, uloÅ¾it do seznamu nebo vyhodit vÃ½jimku.
 
 ## AlbumLibrary/Logger.cs
-Definuje tøídy, které umoòují prùbìnì vypisovat informace o prùbìhu pøíkazu.
+Definuje tÅ™Ã­dy, kterÃ© umoÅ¾ÅˆujÃ­ prÅ¯bÄ›Å¾nÄ› vypisovat informace o prÅ¯bÄ›hu pÅ™Ã­kazu.
 
 ## AlbumLibrary/FileSystemProvider.cs
-Definuje tøídy a funkce pro práci se soubory. Implementuje operace UNDO a REDO - tj. wrapper, kterı automaticky zaznamenává operace provedené se soubory a ukládá tyto operace do souborù, aby šly vrátit zpìt.
-Tøídu pro práci se soubory definuje i `AlbumLibrary/FileIndex.cs` a to tøídu, která ukládá informace o souborech a jejich EXIF datech.
+Definuje tÅ™Ã­dy a funkce pro prÃ¡ci se soubory. Implementuje operace UNDO a REDO - tj. wrapper, kterÃ½ automaticky zaznamenÃ¡vÃ¡ operace provedenÃ© se soubory a uklÃ¡dÃ¡ tyto operace do souborÅ¯, aby Å¡ly vrÃ¡tit zpÄ›t.
+TÅ™Ã­du pro prÃ¡ci se soubory definuje i `AlbumLibrary/FileIndex.cs` a to tÅ™Ã­du, kterÃ¡ uklÃ¡dÃ¡ informace o souborech a jejich EXIF datech.
 
-# Soubory starající se o zpracování souborù
-Následující soubory se (v tomto poøadí) pouívají pøi zpracování souborù (import, export atd.).
-Jedná se o soubory kde je implementována vlastní logika zpracovávání souborù, zatímco `AlbumConsole/` definuje rùzné zpùsoby jak k této funkcionalitì pøistupovat.
+# Soubory starajÃ­cÃ­ se o zpracovÃ¡nÃ­ souborÅ¯
+NÃ¡sledujÃ­cÃ­ soubory se (v tomto poÅ™adÃ­) pouÅ¾Ã­vajÃ­ pÅ™i zpracovÃ¡nÃ­ souborÅ¯ (import, export atd.).
+JednÃ¡ se o soubory kde je implementovÃ¡na vlastnÃ­ logika zpracovÃ¡vÃ¡nÃ­ souborÅ¯, zatÃ­mco `AlbumConsole/` definuje rÅ¯znÃ© zpÅ¯soby jak k tÃ©to funkcionalitÄ› pÅ™istupovat.
 
 ## AlbumLibrary/ImportFilePathProvider.cs
-Definuje tøídy a funkce, které se starají získání cest ke všem souborùm, které mají bıt zpracovány. Stará se jen o cesty zdrojovıch souborù.
-Obsahuje nìkolik jednoduchıch providerù - jeden soubor, jeden adresáø (ne)rekurzivnì, jeden adresáø s omezením na název souboru a naposledy pouité soubory.
+Definuje tÅ™Ã­dy a funkce, kterÃ© se starajÃ­ zÃ­skÃ¡nÃ­ cest ke vÅ¡em souborÅ¯m, kterÃ© majÃ­ bÃ½t zpracovÃ¡ny. StarÃ¡ se jen o cesty zdrojovÃ½ch souborÅ¯.
+Obsahuje nÄ›kolik jednoduchÃ½ch providerÅ¯ - jeden soubor, jeden adresÃ¡Å™ (ne)rekurzivnÄ›, jeden adresÃ¡Å™ s omezenÃ­m na nÃ¡zev souboru a naposledy pouÅ¾itÃ© soubory.
 
 ## AlbumLibrary/FileInfoProvider.cs
-Definuje tøídy, které zjišují informace o danıch souborech, napøíklad ètením EXIFu.
-Je zde provider kterı naète data z EXIFu, potom jeden, kterı naète data z EXIFu ale ingoruje datum a èas, a taky jeden, kterı k získanım informacím pøipojí relativní cestu souboru k adresáøi alba.
+Definuje tÅ™Ã­dy, kterÃ© zjiÅ¡Å¥ujÃ­ informace o danÃ½ch souborech, napÅ™Ã­klad ÄtenÃ­m EXIFu.
+Je zde provider kterÃ½ naÄte data z EXIFu, potom jeden, kterÃ½ naÄte data z EXIFu ale ingoruje datum a Äas, a taky jeden, kterÃ½ k zÃ­skanÃ½m informacÃ­m pÅ™ipojÃ­ relativnÃ­ cestu souboru k adresÃ¡Å™i alba.
 
 ## AlbumLibrary/FileFilter.cs
-Definuje tøídy, které umoòují soubory filtrovat na základìch informací o nich získanıch.
-Nachází se zde filtry `BeforeDateFilter` a `AfterDateFilter`, které kontrolují datum a èas poøízení fotky a taky `TemplateFilter`, kterı souboru pøiøadí jméno pomocí vhodného `FileNameProvider`u a toto jméno porovná se zadanou hodnotou.
-Dále se zde nachází i filtr `TimeShiftFilter`, kterı se stará o posouvání èasù získanıch z EXIFu.
+Definuje tÅ™Ã­dy, kterÃ© umoÅ¾ÅˆujÃ­ soubory filtrovat na zÃ¡kladÄ›ch informacÃ­ o nich zÃ­skanÃ½ch.
+NachÃ¡zÃ­ se zde filtry `BeforeDateFilter` a `AfterDateFilter`, kterÃ© kontrolujÃ­ datum a Äas poÅ™Ã­zenÃ­ fotky a taky `TemplateFilter`, kterÃ½ souboru pÅ™iÅ™adÃ­ jmÃ©no pomocÃ­ vhodnÃ©ho `FileNameProvider`u a toto jmÃ©no porovnÃ¡ se zadanou hodnotou.
+DÃ¡le se zde nachÃ¡zÃ­ i filtr `TimeShiftFilter`, kterÃ½ se starÃ¡ o posouvÃ¡nÃ­ ÄasÅ¯ zÃ­skanÃ½ch z EXIFu.
 
 ## AlbumLibrary/FileNameProvider.cs
-Definuje tøídy, které zpracovávanım souborùm na základì informací o nich (získanıch pomocí `IFileNameProvider`u) pøiøazují jména (vlastnì relativní cesty v rámci alba).
+Definuje tÅ™Ã­dy, kterÃ© zpracovÃ¡vanÃ½m souborÅ¯m na zÃ¡kladÄ› informacÃ­ o nich (zÃ­skanÃ½ch pomocÃ­ `IFileNameProvider`u) pÅ™iÅ™azujÃ­ jmÃ©na (vlastnÄ› relativnÃ­ cesty v rÃ¡mci alba).
 
 ## AlbumLibrary/ImportListProvider.cs
-Vyuívá tøíd pøedchozích souborù k získání seznamu zdrojovıch a cílovıch cest souborù ke zpracování.
+VyuÅ¾Ã­vÃ¡ tÅ™Ã­d pÅ™edchozÃ­ch souborÅ¯ k zÃ­skÃ¡nÃ­ seznamu zdrojovÃ½ch a cÃ­lovÃ½ch cest souborÅ¯ ke zpracovÃ¡nÃ­.
 
 ## AlbumLibrary/DuplicateResolver.cs
-Definuje tøídy, které reagují na pøípad, kdy dva soubory mají stejné jméno. Vıbìrem správné tøídy mùeme tyto soubory pøeskoèit, pøepsat, pøidat suffix ke jménu nebo spoèítat hash souborù a porovnat.
+Definuje tÅ™Ã­dy, kterÃ© reagujÃ­ na pÅ™Ã­pad, kdy dva soubory majÃ­ stejnÃ© jmÃ©no. VÃ½bÄ›rem sprÃ¡vnÃ© tÅ™Ã­dy mÅ¯Å¾eme tyto soubory pÅ™eskoÄit, pÅ™epsat, pÅ™idat suffix ke jmÃ©nu nebo spoÄÃ­tat hash souborÅ¯ a porovnat.
 
 ## AlbumLibrary/FileImporter.cs
-Definuje tøídy, které se starají o vlastní zpracování souborù. Toto zpracování mùe bıt zkopírování, pøesunutí nebo smazání (popø. smazání, pokud cílovı soubor neexistuje - vyuito pøi backupu). Spolupracuje s `AlbumLibrary/DuplicateResolver.cs`.
+Definuje tÅ™Ã­dy, kterÃ© se starajÃ­ o vlastnÃ­ zpracovÃ¡nÃ­ souborÅ¯. Toto zpracovÃ¡nÃ­ mÅ¯Å¾e bÃ½t zkopÃ­rovÃ¡nÃ­, pÅ™esunutÃ­ nebo smazÃ¡nÃ­ (popÅ™. smazÃ¡nÃ­, pokud cÃ­lovÃ½ soubor neexistuje - vyuÅ¾ito pÅ™i backupu). Spolupracuje s `AlbumLibrary/DuplicateResolver.cs`.
 
 # Testy
-Sloka `AlbumTest/` obsahuje testy, které kontrolují nìkteré funkcionality, jestli fungují správnì. Ne všechny funkcionality mají testy a ne všechny testy fungují na Linuxu.
+SloÅ¾ka `AlbumTest/` obsahuje testy, kterÃ© kontrolujÃ­ nÄ›kterÃ© funkcionality, jestli fungujÃ­ sprÃ¡vnÄ›. Ne vÅ¡echny funkcionality majÃ­ testy a ne vÅ¡echny testy fungujÃ­ na Linuxu.
